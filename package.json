@@ -2,18 +2,40 @@
   "name": "rescript-envsafe",
   "version": "0.0.1",
   "description": "🔒 Makes sure you don't accidentally deploy apps with missing or invalid environment variables",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "homepage": "https://github.com/DZakh/rescript-envsafe#readme",
+  "bugs": {
+    "url": "https://github.com/DZakh/rescript-envsafe/issues"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/DZakh/rescript-envsafe.git"
   },
-  "author": "Dmitry Zakharov <dzakh.dev@gmail.com>",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/DZakh/rescript-envsafe/issues"
+  "author": "Dmitry Zakharov <dzakh.dev@gmail.com>",
+  "main": "index.js",
+  "files": [
+    "src/**/*.res",
+    "src/**/*.resi",
+    "bsconfig.json"
+  ],
+  "scripts": {
+    "res:build": "rescript build -with-deps",
+    "res:dev": "rescript build -with-deps -w",
+    "test": "ava"
   },
-  "homepage": "https://github.com/DZakh/rescript-envsafe#readme"
+  "ava": {
+    "files": [
+      "__tests__/**/*_test.bs.js"
+    ]
+  },
+  "devDependencies": {
+    "@dzakh/rescript-ava": "0.4.0",
+    "ava": "4.3.3",
+    "rescript": "10.0.0",
+    "rescript-struct": "1.0.0"
+  },
+  "peerDependencies": {
+    "rescript": "10.0.x",
+    "rescript-struct": "1.0.x"
+  }
 }
