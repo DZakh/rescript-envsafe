@@ -10,4 +10,4 @@ module Config: {
   let reset: unit => unit
 }
 
-let get: (~key: string, ~struct: S.t<'value>) => 'value
+let get: (~key: string, ~struct: S.t<'value>, ~allowEmpty: bool=?, unit) => 'value

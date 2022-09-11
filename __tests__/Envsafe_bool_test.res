@@ -6,7 +6,7 @@ ava->test(`Successfully get Bool value when the env is "1"`, t => {
       "BOOL_ENV": "1",
     }),
   })
-  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.bool()), true, ())
+  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.bool(), ()), true, ())
 })
 
 ava->test(`Successfully get Bool value when the env is "t"`, t => {
@@ -15,7 +15,7 @@ ava->test(`Successfully get Bool value when the env is "t"`, t => {
       "BOOL_ENV": "t",
     }),
   })
-  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.bool()), true, ())
+  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.bool(), ()), true, ())
 })
 
 ava->test(`Successfully get Bool value when the env is "true"`, t => {
@@ -24,7 +24,7 @@ ava->test(`Successfully get Bool value when the env is "true"`, t => {
       "BOOL_ENV": "true",
     }),
   })
-  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.bool()), true, ())
+  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.bool(), ()), true, ())
 })
 
 ava->test(`Successfully get Bool value when the env is "false"`, t => {
@@ -33,7 +33,7 @@ ava->test(`Successfully get Bool value when the env is "false"`, t => {
       "BOOL_ENV": "false",
     }),
   })
-  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.bool()), false, ())
+  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.bool(), ()), false, ())
 })
 
 ava->test(`Successfully get Bool value when the env is "f"`, t => {
@@ -42,7 +42,7 @@ ava->test(`Successfully get Bool value when the env is "f"`, t => {
       "BOOL_ENV": "f",
     }),
   })
-  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.bool()), false, ())
+  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.bool(), ()), false, ())
 })
 
 ava->test(`Successfully get Bool value when the env is "0"`, t => {
@@ -51,7 +51,7 @@ ava->test(`Successfully get Bool value when the env is "0"`, t => {
       "BOOL_ENV": "0",
     }),
   })
-  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.bool()), false, ())
+  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.bool(), ()), false, ())
 })
 
 ava->test(`Successfully get Literal Bool (true) value when the env is "1"`, t => {
@@ -60,7 +60,7 @@ ava->test(`Successfully get Literal Bool (true) value when the env is "1"`, t =>
       "BOOL_ENV": "1",
     }),
   })
-  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.literal(Bool(true))), true, ())
+  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.literal(Bool(true)), ()), true, ())
 })
 
 ava->test(`Successfully get Literal Bool (true) value when the env is "t"`, t => {
@@ -69,7 +69,7 @@ ava->test(`Successfully get Literal Bool (true) value when the env is "t"`, t =>
       "BOOL_ENV": "t",
     }),
   })
-  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.literal(Bool(true))), true, ())
+  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.literal(Bool(true)), ()), true, ())
 })
 
 ava->test(`Successfully get Literal Bool (true) value when the env is "true"`, t => {
@@ -78,7 +78,7 @@ ava->test(`Successfully get Literal Bool (true) value when the env is "true"`, t
       "BOOL_ENV": "true",
     }),
   })
-  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.literal(Bool(true))), true, ())
+  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.literal(Bool(true)), ()), true, ())
 })
 
 ava->test(`Successfully get Lietarl Bool (false) value when the env is "false"`, t => {
@@ -87,7 +87,7 @@ ava->test(`Successfully get Lietarl Bool (false) value when the env is "false"`,
       "BOOL_ENV": "false",
     }),
   })
-  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.literal(Bool(false))), false, ())
+  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.literal(Bool(false)), ()), false, ())
 })
 
 ava->test(`Successfully get Lietarl Bool (false) value when the env is "f"`, t => {
@@ -96,7 +96,7 @@ ava->test(`Successfully get Lietarl Bool (false) value when the env is "f"`, t =
       "BOOL_ENV": "f",
     }),
   })
-  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.literal(Bool(false))), false, ())
+  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.literal(Bool(false)), ()), false, ())
 })
 
 ava->test(`Successfully get Lietarl Bool (false) value when the env is "0"`, t => {
@@ -105,5 +105,5 @@ ava->test(`Successfully get Lietarl Bool (false) value when the env is "0"`, t =
       "BOOL_ENV": "0",
     }),
   })
-  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.literal(Bool(false))), false, ())
+  t->Assert.is(Envsafe.get(~key="BOOL_ENV", ~struct=S.literal(Bool(false)), ()), false, ())
 })

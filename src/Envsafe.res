@@ -27,7 +27,8 @@ module Config = {
   let getEnv = () => configRef.contents.env->Belt.Option.getWithDefault(Env.default)
 }
 
-let prepareStruct = (~struct) => {
+@inline
+let prepareStruct = (~struct, ~allowEmpty) => {
   struct->S.advancedPreprocess(~parser=(~struct) => {
     switch (struct->S.classify, struct->S.Literal.classify) {
     | (Literal, Some(Bool(_)))
@@ -42,7 +43,7 @@ let prepareStruct = (~struct) => {
           | "f"
           | "0" => false
           | _ => unknown->Obj.magic
-          }
+          }->Obj.magic
         },
       )
     | (Literal, Some(Int(_)))
@@ -55,12 +56,23 @@ let prepareStruct = (~struct) => {
           %raw(`+unknown`)
         },
       )
+    | (String, _) if allowEmpty === false =>
+      Sync(
+        unknown => {
+          switch unknown->Obj.magic {
+          | "" => Js.undefined->Obj.magic
+          | _ => unknown->Obj.magic
+          }
+        },
+      )
     | _ => Sync(unknown => unknown->Obj.magic)
     }
   }, ())
 }
 
-let get = (~key, ~struct) => {
-  let preparedStruct = prepareStruct(~struct)
-  Config.getEnv()->Lib.Dict.get(key)->S.parseWith(preparedStruct)->S.Result.getExn
+let get = (~key, ~struct, ~allowEmpty=false, ()) => {
+  Config.getEnv()
+  ->Lib.Dict.get(key)
+  ->S.parseWith(prepareStruct(~struct, ~allowEmpty))
+  ->S.Result.getExn
 }
