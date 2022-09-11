@@ -32,7 +32,7 @@
     "@dzakh/rescript-ava": "0.4.0",
     "ava": "4.3.3",
     "rescript": "10.0.0",
-    "rescript-struct": "1.0.0"
+    "rescript-struct": "github:DZakh/rescript-struct#559a28e7e0cba97937713f43d00263312853f3f1"
   },
   "peerDependencies": {
     "rescript": "10.0.x",
