@@ -56,6 +56,41 @@ ava->test("Failse to get value when env is missing", t => {
   }, ())
 })
 
+ava->test("Uses devFallback value when env is missing", t => {
+  Envsafe.Config.set({
+    env: Obj.magic({
+      "STRING_ENV": "abc",
+    }),
+  })
+  t->Assert.is(
+    Envsafe.get(
+      ~key="MISSING_ENV",
+      ~struct=S.literalVariant(String("invalid"), #polymorphicToTestFunctionType),
+      ~devFallback=#polymorphicToTestFunctionType,
+      (),
+    ),
+    #polymorphicToTestFunctionType,
+    (),
+  )
+})
+
+ava->test("Doesn't use devFallback value when NODE_ENV is production", t => {
+  Envsafe.Config.set({
+    env: Obj.magic({
+      "STRING_ENV": "abc",
+      "NODE_ENV": "production",
+    }),
+  })
+  t->Assert.throws(() => {
+    Envsafe.get(
+      ~key="MISSING_ENV",
+      ~struct=S.literalVariant(String("invalid"), #polymorphicToTestFunctionType),
+      ~devFallback=#polymorphicToTestFunctionType,
+      (),
+    )->ignore
+  }, ())
+})
+
 ava->test("Successfully get optional value when env is missing", t => {
   Envsafe.Config.set({
     env: Obj.magic({

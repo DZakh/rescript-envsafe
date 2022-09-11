@@ -4,6 +4,12 @@ module Lib = {
   }
 }
 
+module Reporter = {
+  type t = (. unit) => unit
+
+  let default = (. ()) => Js.Exn.raiseTypeError("Invalid env variable")
+}
+
 module Env = {
   type t = Js.Dict.t<string>
 
@@ -12,7 +18,7 @@ module Env = {
 }
 
 module Config = {
-  type t = {env?: Env.t}
+  type t = {env?: Env.t, reporter?: Reporter.t}
 
   let configRef = ref({env: ?None})
 
@@ -24,7 +30,8 @@ module Config = {
     configRef.contents = {env: ?None}
   }
 
-  let getEnv = () => configRef.contents.env->Belt.Option.getWithDefault(Env.default)
+  let getEnv = overwrite => overwrite.env->Belt.Option.getWithDefault(Env.default)
+  let getReporter = overwrite => overwrite.reporter->Belt.Option.getWithDefault(Reporter.default)
 }
 
 @inline
@@ -70,9 +77,15 @@ let prepareStruct = (~struct, ~allowEmpty) => {
   }, ())
 }
 
-let get = (~key, ~struct, ~allowEmpty=false, ()) => {
-  Config.getEnv()
-  ->Lib.Dict.get(key)
-  ->S.parseWith(prepareStruct(~struct, ~allowEmpty))
-  ->S.Result.getExn
+let get = (~key, ~struct, ~allowEmpty=false, ~devFallback as maybeDevFallback=?, ()) => {
+  let config = Config.configRef.contents
+  let env = config->Config.getEnv
+  let parseResult = env->Lib.Dict.get(key)->S.parseWith(prepareStruct(~struct, ~allowEmpty))
+
+  switch (parseResult, maybeDevFallback) {
+  | (Ok(v), _) => v
+  | (Error({code: UnexpectedType({received: "Option"})}), Some(devFallback))
+    if env->Lib.Dict.get("NODE_ENV") !== Some("production") => devFallback
+  | (Error(_), _) => (config->Config.getReporter)(.)->Obj.magic
+  }
 }
