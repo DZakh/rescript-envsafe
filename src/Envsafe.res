@@ -26,10 +26,6 @@ module Config = {
     configRef.contents = config
   }
 
-  let reset = () => {
-    configRef.contents = {env: ?None}
-  }
-
   let getEnv = overwrite => overwrite.env->Belt.Option.getWithDefault(Env.default)
   let getReporter = overwrite => overwrite.reporter->Belt.Option.getWithDefault(Reporter.default)
 }
@@ -77,10 +73,20 @@ let prepareStruct = (~struct, ~allowEmpty) => {
   }, ())
 }
 
-let get = (~key, ~struct, ~allowEmpty=false, ~devFallback as maybeDevFallback=?, ()) => {
+let get = (
+  ~key,
+  ~struct,
+  ~allowEmpty=false,
+  ~devFallback as maybeDevFallback=?,
+  ~input as maybeCustomInput=?,
+  (),
+) => {
   let config = Config.configRef.contents
   let env = config->Config.getEnv
-  let input = env->Lib.Dict.get(key)
+  let input = switch maybeCustomInput {
+  | Some(customInput) => customInput
+  | None => env->Lib.Dict.get(key)
+  }
   let parseResult = input->S.parseWith(prepareStruct(~struct, ~allowEmpty))
 
   switch (parseResult, maybeDevFallback) {

@@ -20,15 +20,11 @@ function set(config) {
   configRef.contents = config;
 }
 
-function reset(param) {
-  configRef.contents = {};
-}
-
-function get(key, struct, allowEmptyOpt, maybeDevFallback, param) {
+function get(key, struct, allowEmptyOpt, maybeDevFallback, maybeCustomInput, param) {
   var allowEmpty = allowEmptyOpt !== undefined ? allowEmptyOpt : false;
   var config = configRef.contents;
   var env = Belt_Option.getWithDefault(config.env, process.env);
-  var input = env[key];
+  var input = maybeCustomInput !== undefined ? Caml_option.valFromOption(maybeCustomInput) : env[key];
   var parseResult = S.parseWith(input, S.advancedPreprocess(struct, (function (struct) {
               var match = S.classify(struct);
               var match$1 = S.Literal.classify(struct);
@@ -134,8 +130,7 @@ function get(key, struct, allowEmptyOpt, maybeDevFallback, param) {
 var Reporter = {};
 
 var Config = {
-  set: set,
-  reset: reset
+  set: set
 };
 
 exports.Reporter = Reporter;

@@ -9,6 +9,30 @@ ava->test("Successfully get String value", t => {
   t->Assert.is(EnvSafe.get(~key="STRING_ENV", ~struct=S.string(), ()), "abc", ())
 })
 
+ava->test("Successfully get String value when provided input", t => {
+  EnvSafe.Config.set({
+    env: Obj.magic({
+      "STRING_ENV": "abc",
+    }),
+  })
+  t->Assert.is(
+    EnvSafe.get(~key="STRING_ENV", ~struct=S.string(), ~input=%raw(`"bar"`), ()),
+    "bar",
+    (),
+  )
+})
+
+ava->test("Fails to get String value when provided undefined input even with existing env", t => {
+  EnvSafe.Config.set({
+    env: Obj.magic({
+      "STRING_ENV": "abc",
+    }),
+  })
+  t->Assert.throws(() => {
+    EnvSafe.get(~key="STRING_ENV", ~struct=S.string(), ~input=%raw(`undefined`), ())->ignore
+  }, ())
+})
+
 ava->test("Fails to get String value when env is an empty string", t => {
   EnvSafe.Config.set({
     env: Obj.magic({

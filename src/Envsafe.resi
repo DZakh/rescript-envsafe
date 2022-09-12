@@ -10,8 +10,6 @@ module Config: {
   type t = {env?: Env.t, reporter?: Reporter.t}
 
   let set: t => unit
-
-  let reset: unit => unit
 }
 
 let get: (
@@ -19,5 +17,6 @@ let get: (
   ~struct: S.t<'value>,
   ~allowEmpty: bool=?,
   ~devFallback: 'value=?,
+  ~input: option<string>=?,
   unit,
 ) => 'value
