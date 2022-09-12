@@ -6,7 +6,7 @@ var Js_exn = require("rescript/lib/js/js_exn.js");
 var Belt_Option = require("rescript/lib/js/belt_Option.js");
 var Caml_option = require("rescript/lib/js/caml_option.js");
 
-function $$default() {
+function $$default(param, param$1) {
   return Js_exn.raiseTypeError("Invalid env variable");
 }
 
@@ -28,7 +28,8 @@ function get(key, struct, allowEmptyOpt, maybeDevFallback, param) {
   var allowEmpty = allowEmptyOpt !== undefined ? allowEmptyOpt : false;
   var config = configRef.contents;
   var env = Belt_Option.getWithDefault(config.env, process.env);
-  var parseResult = S.parseWith(env[key], S.advancedPreprocess(struct, (function (struct) {
+  var input = env[key];
+  var parseResult = S.parseWith(input, S.advancedPreprocess(struct, (function (struct) {
               var match = S.classify(struct);
               var match$1 = S.Literal.classify(struct);
               var exit = 0;
@@ -122,11 +123,12 @@ function get(key, struct, allowEmptyOpt, maybeDevFallback, param) {
   if (parseResult.TAG === /* Ok */0) {
     return parseResult._0;
   }
-  var match = parseResult._0.code;
+  var error = parseResult._0;
+  var match = error.code;
   if (typeof match !== "number" && match.TAG === /* UnexpectedType */1 && match.received === "Option" && maybeDevFallback !== undefined && env["NODE_ENV"] !== "production") {
     return Caml_option.valFromOption(maybeDevFallback);
   }
-  return Belt_Option.getWithDefault(config.reporter, $$default)();
+  return Belt_Option.getWithDefault(config.reporter, $$default)(key, error);
 }
 
 var Reporter = {};

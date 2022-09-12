@@ -5,9 +5,9 @@ module Lib = {
 }
 
 module Reporter = {
-  type t = (. unit) => unit
+  type t = (. ~key: string, ~error: S.Error.t) => unit
 
-  let default = (. ()) => Js.Exn.raiseTypeError("Invalid env variable")
+  let default = (. ~key as _, ~error as _) => Js.Exn.raiseTypeError("Invalid env variable")
 }
 
 module Env = {
@@ -80,12 +80,13 @@ let prepareStruct = (~struct, ~allowEmpty) => {
 let get = (~key, ~struct, ~allowEmpty=false, ~devFallback as maybeDevFallback=?, ()) => {
   let config = Config.configRef.contents
   let env = config->Config.getEnv
-  let parseResult = env->Lib.Dict.get(key)->S.parseWith(prepareStruct(~struct, ~allowEmpty))
+  let input = env->Lib.Dict.get(key)
+  let parseResult = input->S.parseWith(prepareStruct(~struct, ~allowEmpty))
 
   switch (parseResult, maybeDevFallback) {
   | (Ok(v), _) => v
   | (Error({code: UnexpectedType({received: "Option"})}), Some(devFallback))
     if env->Lib.Dict.get("NODE_ENV") !== Some("production") => devFallback
-  | (Error(_), _) => (config->Config.getReporter)(.)->Obj.magic
+  | (Error(error), _) => (config->Config.getReporter)(. ~key, ~error)->Obj.magic
   }
 }

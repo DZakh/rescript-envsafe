@@ -1,5 +1,5 @@
 module Reporter: {
-  type t = (. unit) => unit
+  type t = (. ~key: string, ~error: S.Error.t) => unit
 }
 
 module Env: {

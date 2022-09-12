@@ -1,44 +1,44 @@
 open Ava
 
 ava->test("Successfully get String value", t => {
-  Envsafe.Config.set({
+  EnvSafe.Config.set({
     env: Obj.magic({
       "STRING_ENV": "abc",
     }),
   })
-  t->Assert.is(Envsafe.get(~key="STRING_ENV", ~struct=S.string(), ()), "abc", ())
+  t->Assert.is(EnvSafe.get(~key="STRING_ENV", ~struct=S.string(), ()), "abc", ())
 })
 
 ava->test("Fails to get String value when env is an empty string", t => {
-  Envsafe.Config.set({
+  EnvSafe.Config.set({
     env: Obj.magic({
       "STRING_ENV": "",
     }),
   })
   t->Assert.throws(() => {
-    Envsafe.get(~key="STRING_ENV", ~struct=S.string(), ())->ignore
+    EnvSafe.get(~key="STRING_ENV", ~struct=S.string(), ())->ignore
   }, ())
 })
 
 ava->test("Successfully get String value when env is an empty string and allowEmpty is true", t => {
-  Envsafe.Config.set({
+  EnvSafe.Config.set({
     env: Obj.magic({
       "STRING_ENV": "",
     }),
   })
-  t->Assert.is(Envsafe.get(~key="STRING_ENV", ~struct=S.string(), ~allowEmpty=true, ()), "", ())
+  t->Assert.is(EnvSafe.get(~key="STRING_ENV", ~struct=S.string(), ~allowEmpty=true, ()), "", ())
 })
 
 ava->test(
   `Successfully get String Literal ("") value when env is an empty string and allowEmpty is false`,
   t => {
-    Envsafe.Config.set({
+    EnvSafe.Config.set({
       env: Obj.magic({
         "STRING_ENV": "",
       }),
     })
     t->Assert.is(
-      Envsafe.get(~key="STRING_ENV", ~struct=S.literal(String("")), ~allowEmpty=false, ()),
+      EnvSafe.get(~key="STRING_ENV", ~struct=S.literal(String("")), ~allowEmpty=false, ()),
       "",
       (),
     )
@@ -46,24 +46,24 @@ ava->test(
 )
 
 ava->test("Failse to get value when env is missing", t => {
-  Envsafe.Config.set({
+  EnvSafe.Config.set({
     env: Obj.magic({
       "STRING_ENV": "abc",
     }),
   })
   t->Assert.throws(() => {
-    Envsafe.get(~key="MISSING_ENV", ~struct=S.string(), ())->ignore
+    EnvSafe.get(~key="MISSING_ENV", ~struct=S.string(), ())->ignore
   }, ())
 })
 
 ava->test("Uses devFallback value when env is missing", t => {
-  Envsafe.Config.set({
+  EnvSafe.Config.set({
     env: Obj.magic({
       "STRING_ENV": "abc",
     }),
   })
   t->Assert.is(
-    Envsafe.get(
+    EnvSafe.get(
       ~key="MISSING_ENV",
       ~struct=S.literalVariant(String("invalid"), #polymorphicToTestFunctionType),
       ~devFallback=#polymorphicToTestFunctionType,
@@ -75,14 +75,14 @@ ava->test("Uses devFallback value when env is missing", t => {
 })
 
 ava->test("Doesn't use devFallback value when NODE_ENV is production", t => {
-  Envsafe.Config.set({
+  EnvSafe.Config.set({
     env: Obj.magic({
       "STRING_ENV": "abc",
       "NODE_ENV": "production",
     }),
   })
   t->Assert.throws(() => {
-    Envsafe.get(
+    EnvSafe.get(
       ~key="MISSING_ENV",
       ~struct=S.literalVariant(String("invalid"), #polymorphicToTestFunctionType),
       ~devFallback=#polymorphicToTestFunctionType,
@@ -92,22 +92,22 @@ ava->test("Doesn't use devFallback value when NODE_ENV is production", t => {
 })
 
 ava->test("Successfully get optional value when env is missing", t => {
-  Envsafe.Config.set({
+  EnvSafe.Config.set({
     env: Obj.magic({
       "STRING_ENV": "abc",
     }),
   })
-  t->Assert.is(Envsafe.get(~key="MISSING_ENV", ~struct=S.string()->S.option, ()), None, ())
+  t->Assert.is(EnvSafe.get(~key="MISSING_ENV", ~struct=S.string()->S.option, ()), None, ())
 })
 
 ava->test("Successfully get defaulted value when env is missing", t => {
-  Envsafe.Config.set({
+  EnvSafe.Config.set({
     env: Obj.magic({
       "STRING_ENV": "abc",
     }),
   })
   t->Assert.is(
-    Envsafe.get(~key="MISSING_ENV", ~struct=S.string()->S.option->S.defaulted("Defaulted"), ()),
+    EnvSafe.get(~key="MISSING_ENV", ~struct=S.string()->S.option->S.defaulted("Defaulted"), ()),
     "Defaulted",
     (),
   )
