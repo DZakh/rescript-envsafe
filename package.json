@@ -31,8 +31,8 @@
   "devDependencies": {
     "@dzakh/rescript-ava": "0.4.0",
     "ava": "4.3.3",
-    "rescript": "10.0.0",
-    "rescript-struct": "github:DZakh/rescript-struct#559a28e7e0cba97937713f43d00263312853f3f1"
+    "rescript": "10.0.1",
+    "rescript-struct": "github:DZakh/rescript-struct#77afd05075c5fc28c73a7547baaf30a6a5d81e56"
   },
   "peerDependencies": {
     "rescript": "10.0.x",

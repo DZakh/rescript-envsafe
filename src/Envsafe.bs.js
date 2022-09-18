@@ -2,32 +2,92 @@
 'use strict';
 
 var S = require("rescript-struct/src/S.bs.js");
-var Js_exn = require("rescript/lib/js/js_exn.js");
-var Belt_Option = require("rescript/lib/js/belt_Option.js");
 var Caml_option = require("rescript/lib/js/caml_option.js");
 
-function $$default(param, param$1) {
-  return Js_exn.raiseTypeError("Invalid env variable");
+function alert(message) {
+  if ((typeof window !== 'undefined' && window.alert)) {
+    return (window.alert(message));
+  }
+  
 }
 
-var Env = {};
-
-var configRef = {
-  contents: {}
-};
-
-function set(config) {
-  configRef.contents = config;
+function mixinIssue(envSafe, issue) {
+  var match = issue.error;
+  var match$1 = match.code;
+  if (typeof match$1 !== "number" && match$1.TAG === /* UnexpectedType */1 && match$1.received === "Option") {
+    var missingIssues = envSafe.maybeMissingIssues;
+    if (missingIssues !== undefined) {
+      missingIssues.push(issue);
+    } else {
+      envSafe.maybeMissingIssues = [issue];
+    }
+    return ;
+  }
+  var invalidIssues = envSafe.maybeInvalidIssues;
+  if (invalidIssues !== undefined) {
+    invalidIssues.push(issue);
+  } else {
+    envSafe.maybeInvalidIssues = [issue];
+  }
 }
 
-function get(key, struct, allowEmptyOpt, maybeDevFallback, maybeCustomInput, param) {
+function make(envOpt, param) {
+  var env = envOpt !== undefined ? Caml_option.valFromOption(envOpt) : process.env;
+  return {
+          env: env,
+          isLocked: false,
+          maybeMissingIssues: undefined,
+          maybeInvalidIssues: undefined
+        };
+}
+
+function close(envSafe, param) {
+  if (envSafe.isLocked) {
+    throw new Error("[rescript-envsafe] EnvSafe is already closed.");
+  }
+  envSafe.isLocked = true;
+  var match = envSafe.maybeMissingIssues;
+  var match$1 = envSafe.maybeInvalidIssues;
+  if (match === undefined && match$1 === undefined) {
+    return ;
+  }
+  var line = "========================================";
+  var output = [line];
+  if (match$1 !== undefined) {
+    var invalidIssues = Caml_option.valFromOption(match$1);
+    output.push("❌ Invalid environment variables:");
+    invalidIssues.forEach(function (issue) {
+          var v = issue.input;
+          output.push("    " + issue.name + "" + (
+                v !== undefined ? " (\"" + v + "\")" : ""
+              ) + ": " + S.$$Error.toString(issue.error) + "");
+        });
+  }
+  if (match !== undefined) {
+    var missingIssues = Caml_option.valFromOption(match);
+    output.push("💨 Missing environment variables:");
+    missingIssues.forEach(function (issue) {
+          var match = issue.input;
+          var tmp;
+          tmp = match === "" ? "Disallowed empty string" : "Missing value";
+          output.push("    " + issue.name + ": " + tmp + "");
+        });
+  }
+  output.push(line);
+  var text = output.join("\n");
+  console.error(text);
+  alert(text);
+  throw new TypeError(text);
+}
+
+function get(envSafe, name, struct, allowEmptyOpt, maybeDevFallback, maybeInlinedInput, param) {
   var allowEmpty = allowEmptyOpt !== undefined ? allowEmptyOpt : false;
-  var config = configRef.contents;
-  var env = Belt_Option.getWithDefault(config.env, process.env);
-  var input = maybeCustomInput !== undefined ? Caml_option.valFromOption(maybeCustomInput) : env[key];
+  if (envSafe.isLocked) {
+    throw new Error("[rescript-envsafe] EnvSafe is closed. Make a new one to get access to environment variables.");
+  }
+  var input = maybeInlinedInput !== undefined ? Caml_option.valFromOption(maybeInlinedInput) : envSafe.env[name];
   var parseResult = S.parseWith(input, S.advancedPreprocess(struct, (function (struct) {
               var match = S.classify(struct);
-              var match$1 = S.Literal.classify(struct);
               var exit = 0;
               if (typeof match === "number") {
                 switch (match) {
@@ -53,29 +113,25 @@ function get(key, struct, allowEmptyOpt, maybeDevFallback, maybeCustomInput, par
                   case /* Bool */5 :
                       exit = 2;
                       break;
-                  case /* Literal */6 :
-                      if (match$1 !== undefined && typeof match$1 !== "number") {
-                        switch (match$1.TAG | 0) {
-                          case /* Int */1 :
-                          case /* Float */2 :
-                              exit = 3;
-                              break;
-                          case /* Bool */3 :
-                              exit = 2;
-                              break;
-                          default:
-                            exit = 1;
-                        }
-                      } else {
-                        exit = 1;
-                      }
-                      break;
-                  case /* Never */0 :
-                  case /* Unknown */1 :
-                  case /* Date */7 :
+                  default:
+                    exit = 1;
+                }
+              } else if (match.TAG === /* Literal */0) {
+                var tmp = match._0;
+                if (typeof tmp === "number") {
+                  exit = 1;
+                } else {
+                  switch (tmp.TAG | 0) {
+                    case /* Int */1 :
+                    case /* Float */2 :
+                        exit = 3;
+                        break;
+                    case /* Bool */3 :
+                        exit = 2;
+                        break;
+                    default:
                       exit = 1;
-                      break;
-                  
+                  }
                 }
               } else {
                 exit = 1;
@@ -110,7 +166,11 @@ function get(key, struct, allowEmptyOpt, maybeDevFallback, maybeCustomInput, par
                     return {
                             TAG: /* Sync */0,
                             _0: (function (unknown) {
-                                return (+unknown);
+                                if (typeof unknown === "string") {
+                                  return (+unknown);
+                                } else {
+                                  return unknown;
+                                }
                               })
                           };
                 
@@ -121,20 +181,18 @@ function get(key, struct, allowEmptyOpt, maybeDevFallback, maybeCustomInput, par
   }
   var error = parseResult._0;
   var match = error.code;
-  if (typeof match !== "number" && match.TAG === /* UnexpectedType */1 && match.received === "Option" && maybeDevFallback !== undefined && env["NODE_ENV"] !== "production") {
+  if (typeof match !== "number" && match.TAG === /* UnexpectedType */1 && match.received === "Option" && maybeDevFallback !== undefined && envSafe.env["NODE_ENV"] !== "production") {
     return Caml_option.valFromOption(maybeDevFallback);
   }
-  return Belt_Option.getWithDefault(config.reporter, $$default)(key, error);
+  mixinIssue(envSafe, {
+        name: name,
+        error: error,
+        input: input
+      });
+  return undefined;
 }
 
-var Reporter = {};
-
-var Config = {
-  set: set
-};
-
-exports.Reporter = Reporter;
-exports.Env = Env;
-exports.Config = Config;
+exports.make = make;
+exports.close = close;
 exports.get = get;
-/* S Not a pure module */
+/* No side effect */

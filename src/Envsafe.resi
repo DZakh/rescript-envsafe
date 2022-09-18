@@ -1,19 +1,13 @@
-module Reporter: {
-  type t = (. ~key: string, ~error: S.Error.t) => unit
-}
+type env
+type t
 
-module Env: {
-  type t
-}
+let make: (~env: env=?, unit) => t
 
-module Config: {
-  type t = {env?: Env.t, reporter?: Reporter.t}
-
-  let set: t => unit
-}
+let close: (t, unit) => unit
 
 let get: (
-  ~key: string,
+  t,
+  ~name: string,
   ~struct: S.t<'value>,
   ~allowEmpty: bool=?,
   ~devFallback: 'value=?,
