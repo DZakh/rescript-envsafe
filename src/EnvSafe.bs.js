@@ -87,10 +87,12 @@ function get(envSafe, name, struct, allowEmptyOpt, maybeDevFallback, maybeInline
   }
   var input = maybeInlinedInput !== undefined ? Caml_option.valFromOption(maybeInlinedInput) : envSafe.env[name];
   var parseResult = S.parseWith(input, S.advancedPreprocess(struct, (function (struct) {
-              var match = S.classify(struct);
+              var optionalStruct = S.classify(struct);
+              var tagged;
+              tagged = typeof optionalStruct === "number" || optionalStruct.TAG !== /* Option */1 ? optionalStruct : S.classify(optionalStruct._0);
               var exit = 0;
-              if (typeof match === "number") {
-                switch (match) {
+              if (typeof tagged === "number") {
+                switch (tagged) {
                   case /* String */2 :
                       if (allowEmpty === false) {
                         return {
@@ -116,8 +118,8 @@ function get(envSafe, name, struct, allowEmptyOpt, maybeDevFallback, maybeInline
                   default:
                     exit = 1;
                 }
-              } else if (match.TAG === /* Literal */0) {
-                var tmp = match._0;
+              } else if (tagged.TAG === /* Literal */0) {
+                var tmp = tagged._0;
                 if (typeof tmp === "number") {
                   exit = 1;
                 } else {

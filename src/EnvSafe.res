@@ -126,7 +126,11 @@ let close = (envSafe, ()) => {
 @inline
 let prepareStruct = (~struct, ~allowEmpty) => {
   struct->S.advancedPreprocess(~parser=(~struct) => {
-    switch struct->S.classify {
+    let tagged = switch struct->S.classify {
+    | Option(optionalStruct) => optionalStruct->S.classify
+    | tagged => tagged
+    }
+    switch tagged {
     | Literal(Bool(_))
     | Bool =>
       Sync(

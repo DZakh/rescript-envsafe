@@ -86,14 +86,14 @@ Creates `envSafe` to start working with environment variables. By default it use
 let port = envSafe->EnvSafe.get(~name="PORT", ~struct=S.int()->S.Int.port(), ~devFallback=3000, ())
 ```
 
-Gets an environment variable from `envSafe` applying coersion and parsing logic of `struct`.
+Gets an environment variable from `envSafe` applying coercion and parsing logic of `struct`.
 
 #### Possible options
 
 | Name          | Type          | Description                                                                                                                                                                                                                                                                        |
 | ------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `name`        | `string`      | Name of the environment variable                                                                                                                                                                                                                                                   |
-| `struct`      | `S.t<'value>` | A struct created with **[rescript-struct](https://github.com/DZakh/rescript-struct)**. It's used for coersion and parsing. For bool structs coerces `"0", "1", "true", "false", "t", "f"` to boolean values. For int and float structs coerces string to number.                   |
+| `struct`      | `S.t<'value>` | A struct created with **[rescript-struct](https://github.com/DZakh/rescript-struct)**. It's used for coercion and parsing. For bool structs coerces `"0", "1", "true", "false", "t", "f"` to boolean values. For int and float structs coerces string to number.                   |
 | `devFallback` | `'value=?`    | A fallback value to use only when `NODE_ENV` is not `production`. This is handy for env vars that are required for production environments, but optional for development and testing. If you need to set fallback value for all environments, you can use `S.defaulted` on struct. |
 | `input`       | `string=?`    | As some environments don't allow you to dynamically read env vars, we can manually put it in as well. Example: `input=%raw("process.env.NEXT_PUBLIC_API_URL")`.                                                                                                                    |
 | `allowEmpty`  | `bool=false`  | Default behavior is `false` which treats empty strings as the value is missing. if explicit empty strings are OK, pass in `true`.                                                                                                                                                  |

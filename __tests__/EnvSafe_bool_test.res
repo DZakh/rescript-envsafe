@@ -134,7 +134,11 @@ ava->test(`Successfully get Lietarl Bool (false) value when the env is "false"`,
     (),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get(~name="BOOL_ENV", ~struct=S.literal(Bool(false)), ()), false, ())
+  t->Assert.is(
+    envSafe->EnvSafe.get(~name="BOOL_ENV", ~struct=S.literal(Bool(false)), ()),
+    false,
+    (),
+  )
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close()
   }, ())
@@ -148,7 +152,11 @@ ava->test(`Successfully get Lietarl Bool (false) value when the env is "f"`, t =
     (),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get(~name="BOOL_ENV", ~struct=S.literal(Bool(false)), ()), false, ())
+  t->Assert.is(
+    envSafe->EnvSafe.get(~name="BOOL_ENV", ~struct=S.literal(Bool(false)), ()),
+    false,
+    (),
+  )
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close()
   }, ())
@@ -162,7 +170,11 @@ ava->test(`Successfully get Lietarl Bool (false) value when the env is "0"`, t =
     (),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get(~name="BOOL_ENV", ~struct=S.literal(Bool(false)), ()), false, ())
+  t->Assert.is(
+    envSafe->EnvSafe.get(~name="BOOL_ENV", ~struct=S.literal(Bool(false)), ()),
+    false,
+    (),
+  )
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close()
   }, ())
@@ -191,4 +203,22 @@ ava->test(`Fails to get Bool value when the env is "2"`, t => {
     ),
     (),
   )
+})
+
+ava->test(`Successfully get optional Bool value when the env is "1"`, t => {
+  let envSafe = EnvSafe.make(
+    ~env=Obj.magic({
+      "BOOL_ENV": "1",
+    }),
+    (),
+  )
+
+  t->Assert.is(
+    envSafe->EnvSafe.get(~name="BOOL_ENV", ~struct=S.option(S.bool()), ()),
+    Some(true),
+    (),
+  )
+  t->Assert.notThrows(() => {
+    envSafe->EnvSafe.close()
+  }, ())
 })
