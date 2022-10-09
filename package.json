@@ -1,6 +1,6 @@
 {
   "name": "rescript-envsafe",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "🔒 Makes sure you don't accidentally deploy apps with missing or invalid environment variables",
   "homepage": "https://github.com/DZakh/rescript-envsafe#readme",
   "keywords": [

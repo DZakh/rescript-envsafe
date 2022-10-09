@@ -23,15 +23,15 @@ Heavily inspired by the great project [envsafe](https://github.com/KATT/envsafe)
 ### Install
 
 ```sh
-npm install rescript-env rescript-struct
+npm install rescript-envsafe rescript-struct
 ```
 
-Then add `rescript-env` and `rescript-struct` to `bs-dependencies` in your `bsconfig.json`:
+Then add `rescript-envsafe` and `rescript-struct` to `bs-dependencies` in your `bsconfig.json`:
 
 ```diff
 {
   ...
-+ "bs-dependencies": ["rescript-env", "rescript-struct"]
++ "bs-dependencies": ["rescript-envsafe", "rescript-struct"]
 }
 ```
 
