@@ -1,6 +1,6 @@
 open Ava
 
-ava->test(`Works with Example code`, t => {
+test(`Works with Example code`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "NODE_ENV": "development",

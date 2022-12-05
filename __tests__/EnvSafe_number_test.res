@@ -1,6 +1,6 @@
 open Ava
 
-ava->test(`Successfully get Int value when the env is "1"`, t => {
+test(`Successfully get Int value when the env is "1"`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "INT_ENV": "1",
@@ -14,7 +14,7 @@ ava->test(`Successfully get Int value when the env is "1"`, t => {
   }, ())
 })
 
-ava->test(`Successfully get Literal Int value when the env is "1"`, t => {
+test(`Successfully get Literal Int value when the env is "1"`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "INT_ENV": "1",
@@ -28,7 +28,7 @@ ava->test(`Successfully get Literal Int value when the env is "1"`, t => {
   }, ())
 })
 
-ava->test(`Successfully get Float value when the env is "1"`, t => {
+test(`Successfully get Float value when the env is "1"`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "INT_ENV": "1",
@@ -42,7 +42,7 @@ ava->test(`Successfully get Float value when the env is "1"`, t => {
   }, ())
 })
 
-ava->test(`Successfully get Literal Float value when the env is "1"`, t => {
+test(`Successfully get Literal Float value when the env is "1"`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "INT_ENV": "1",
@@ -56,7 +56,7 @@ ava->test(`Successfully get Literal Float value when the env is "1"`, t => {
   }, ())
 })
 
-ava->test(`Fails to get invalid number`, t => {
+test(`Fails to get invalid number`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "INT_ENV": "1_000",
@@ -69,19 +69,18 @@ ava->test(`Fails to get invalid number`, t => {
     () => {
       envSafe->EnvSafe.close()
     },
-    ~expectations=ThrowsException.make(
-      ~name="TypeError",
-      ~message=String(`========================================
+    ~expectations={
+      name: "TypeError",
+      message: `========================================
 ❌ Invalid environment variables:
     INT_ENV ("1_000"): Failed parsing at root. Reason: Expected Int, received NaN Literal (NaN)
-========================================`),
-      (),
-    ),
+========================================`,
+    },
     (),
   )
 })
 
-ava->test(`Fails to get missing number`, t => {
+test(`Fails to get missing number`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "INT_ENV": "1_000",
@@ -98,14 +97,13 @@ ava->test(`Fails to get missing number`, t => {
     () => {
       envSafe->EnvSafe.close()
     },
-    ~expectations=ThrowsException.make(
-      ~name="TypeError",
-      ~message=String(`========================================
+    ~expectations={
+      name: "TypeError",
+      message: `========================================
 💨 Missing environment variables:
     MISSING_ENV: Missing value
-========================================`),
-      (),
-    ),
+========================================`,
+    },
     (),
   )
 })

@@ -1,6 +1,6 @@
 open Ava
 
-ava->test(`Successfully get Bool value when the env is "1"`, t => {
+test(`Successfully get Bool value when the env is "1"`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "BOOL_ENV": "1",
@@ -14,7 +14,7 @@ ava->test(`Successfully get Bool value when the env is "1"`, t => {
   }, ())
 })
 
-ava->test(`Successfully get Bool value when the env is "t"`, t => {
+test(`Successfully get Bool value when the env is "t"`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "BOOL_ENV": "t",
@@ -28,7 +28,7 @@ ava->test(`Successfully get Bool value when the env is "t"`, t => {
   }, ())
 })
 
-ava->test(`Successfully get Bool value when the env is "true"`, t => {
+test(`Successfully get Bool value when the env is "true"`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "BOOL_ENV": "true",
@@ -42,7 +42,7 @@ ava->test(`Successfully get Bool value when the env is "true"`, t => {
   }, ())
 })
 
-ava->test(`Successfully get Bool value when the env is "false"`, t => {
+test(`Successfully get Bool value when the env is "false"`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "BOOL_ENV": "false",
@@ -56,7 +56,7 @@ ava->test(`Successfully get Bool value when the env is "false"`, t => {
   }, ())
 })
 
-ava->test(`Successfully get Bool value when the env is "f"`, t => {
+test(`Successfully get Bool value when the env is "f"`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "BOOL_ENV": "f",
@@ -70,7 +70,7 @@ ava->test(`Successfully get Bool value when the env is "f"`, t => {
   }, ())
 })
 
-ava->test(`Successfully get Bool value when the env is "0"`, t => {
+test(`Successfully get Bool value when the env is "0"`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "BOOL_ENV": "0",
@@ -84,7 +84,7 @@ ava->test(`Successfully get Bool value when the env is "0"`, t => {
   }, ())
 })
 
-ava->test(`Successfully get Literal Bool (true) value when the env is "1"`, t => {
+test(`Successfully get Literal Bool (true) value when the env is "1"`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "BOOL_ENV": "1",
@@ -98,7 +98,7 @@ ava->test(`Successfully get Literal Bool (true) value when the env is "1"`, t =>
   }, ())
 })
 
-ava->test(`Successfully get Literal Bool (true) value when the env is "t"`, t => {
+test(`Successfully get Literal Bool (true) value when the env is "t"`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "BOOL_ENV": "t",
@@ -112,7 +112,7 @@ ava->test(`Successfully get Literal Bool (true) value when the env is "t"`, t =>
   }, ())
 })
 
-ava->test(`Successfully get Literal Bool (true) value when the env is "true"`, t => {
+test(`Successfully get Literal Bool (true) value when the env is "true"`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "BOOL_ENV": "true",
@@ -126,7 +126,7 @@ ava->test(`Successfully get Literal Bool (true) value when the env is "true"`, t
   }, ())
 })
 
-ava->test(`Successfully get Lietarl Bool (false) value when the env is "false"`, t => {
+test(`Successfully get Lietarl Bool (false) value when the env is "false"`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "BOOL_ENV": "false",
@@ -144,7 +144,7 @@ ava->test(`Successfully get Lietarl Bool (false) value when the env is "false"`,
   }, ())
 })
 
-ava->test(`Successfully get Lietarl Bool (false) value when the env is "f"`, t => {
+test(`Successfully get Lietarl Bool (false) value when the env is "f"`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "BOOL_ENV": "f",
@@ -162,7 +162,7 @@ ava->test(`Successfully get Lietarl Bool (false) value when the env is "f"`, t =
   }, ())
 })
 
-ava->test(`Successfully get Lietarl Bool (false) value when the env is "0"`, t => {
+test(`Successfully get Lietarl Bool (false) value when the env is "0"`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "BOOL_ENV": "0",
@@ -180,7 +180,7 @@ ava->test(`Successfully get Lietarl Bool (false) value when the env is "0"`, t =
   }, ())
 })
 
-ava->test(`Fails to get Bool value when the env is "2"`, t => {
+test(`Fails to get Bool value when the env is "2"`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "BOOL_ENV": "2",
@@ -193,19 +193,18 @@ ava->test(`Fails to get Bool value when the env is "2"`, t => {
     () => {
       envSafe->EnvSafe.close()
     },
-    ~expectations=ThrowsException.make(
-      ~name="TypeError",
-      ~message=String(`========================================
+    ~expectations={
+      name: "TypeError",
+      message: `========================================
 ❌ Invalid environment variables:
     BOOL_ENV ("2"): Failed parsing at root. Reason: Expected Bool, received String
-========================================`),
-      (),
-    ),
+========================================`,
+    },
     (),
   )
 })
 
-ava->test(`Successfully get optional Bool value when the env is "1"`, t => {
+test(`Successfully get optional Bool value when the env is "1"`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "BOOL_ENV": "1",

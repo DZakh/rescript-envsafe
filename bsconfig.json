@@ -3,6 +3,7 @@
   "namespace": false,
   "bs-dev-dependencies": ["@dzakh/rescript-ava"],
   "bs-dependencies": ["rescript-struct"],
+  "bsc-flags": ["-open ReScriptStruct"],
   "suffix": ".bs.js",
   "package-specs": {
     "module": "commonjs",

@@ -1,6 +1,6 @@
 open Ava
 
-ava->test("Successfully get String value", t => {
+test("Successfully get String value", t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "STRING_ENV": "abc",
@@ -14,7 +14,7 @@ ava->test("Successfully get String value", t => {
   }, ())
 })
 
-ava->test("Successfully get String value when provided input", t => {
+test("Successfully get String value when provided input", t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "STRING_ENV": "abc",
@@ -32,7 +32,7 @@ ava->test("Successfully get String value when provided input", t => {
   }, ())
 })
 
-ava->test("Fails to get String value when provided undefined input even with existing env", t => {
+test("Fails to get String value when provided undefined input even with existing env", t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "STRING_ENV": "abc",
@@ -49,19 +49,18 @@ ava->test("Fails to get String value when provided undefined input even with exi
     () => {
       envSafe->EnvSafe.close()
     },
-    ~expectations=ThrowsException.make(
-      ~name="TypeError",
-      ~message=String(`========================================
+    ~expectations={
+      name: "TypeError",
+      message: `========================================
 💨 Missing environment variables:
     STRING_ENV: Missing value
-========================================`),
-      (),
-    ),
+========================================`,
+    },
     (),
   )
 })
 
-ava->test("Fails to get String value when env is an empty string", t => {
+test("Fails to get String value when env is an empty string", t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "STRING_ENV": "",
@@ -78,19 +77,18 @@ ava->test("Fails to get String value when env is an empty string", t => {
     () => {
       envSafe->EnvSafe.close()
     },
-    ~expectations=ThrowsException.make(
-      ~name="TypeError",
-      ~message=String(`========================================
+    ~expectations={
+      name: "TypeError",
+      message: `========================================
 💨 Missing environment variables:
     STRING_ENV: Disallowed empty string
-========================================`),
-      (),
-    ),
+========================================`,
+    },
     (),
   )
 })
 
-ava->test("Successfully get String value when env is an empty string and allowEmpty is true", t => {
+test("Successfully get String value when env is an empty string and allowEmpty is true", t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "STRING_ENV": "",
@@ -108,7 +106,7 @@ ava->test("Successfully get String value when env is an empty string and allowEm
   }, ())
 })
 
-ava->test(
+test(
   `Successfully get String Literal ("") value when env is an empty string and allowEmpty is false`,
   t => {
     let envSafe = EnvSafe.make(
@@ -134,7 +132,7 @@ ava->test(
   },
 )
 
-ava->test("Fails to get value when env is missing", t => {
+test("Fails to get value when env is missing", t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "STRING_ENV": "abc",
@@ -151,19 +149,18 @@ ava->test("Fails to get value when env is missing", t => {
     () => {
       envSafe->EnvSafe.close()
     },
-    ~expectations=ThrowsException.make(
-      ~name="TypeError",
-      ~message=String(`========================================
+    ~expectations={
+      name: "TypeError",
+      message: `========================================
 💨 Missing environment variables:
     MISSING_ENV: Missing value
-========================================`),
-      (),
-    ),
+========================================`,
+    },
     (),
   )
 })
 
-ava->test("Uses devFallback value when env is missing", t => {
+test("Uses devFallback value when env is missing", t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "STRING_ENV": "abc",
@@ -186,7 +183,7 @@ ava->test("Uses devFallback value when env is missing", t => {
   }, ())
 })
 
-ava->test("Doesn't use devFallback value when NODE_ENV is production", t => {
+test("Doesn't use devFallback value when NODE_ENV is production", t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "STRING_ENV": "abc",
@@ -209,19 +206,18 @@ ava->test("Doesn't use devFallback value when NODE_ENV is production", t => {
     () => {
       envSafe->EnvSafe.close()
     },
-    ~expectations=ThrowsException.make(
-      ~name="TypeError",
-      ~message=String(`========================================
+    ~expectations={
+      name: "TypeError",
+      message: `========================================
 💨 Missing environment variables:
     MISSING_ENV: Missing value
-========================================`),
-      (),
-    ),
+========================================`,
+    },
     (),
   )
 })
 
-ava->test("Successfully get optional value when env is missing", t => {
+test("Successfully get optional value when env is missing", t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "STRING_ENV": "abc",
@@ -239,7 +235,7 @@ ava->test("Successfully get optional value when env is missing", t => {
   }, ())
 })
 
-ava->test("Successfully get defaulted value when env is missing", t => {
+test("Successfully get defaulted value when env is missing", t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "STRING_ENV": "abc",
@@ -261,7 +257,7 @@ ava->test("Successfully get defaulted value when env is missing", t => {
   }, ())
 })
 
-ava->test("Closes with 1 valid, 3 missing and 2 invalid environment variables", t => {
+test("Closes with 1 valid, 3 missing and 2 invalid environment variables", t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "STRING_ENV": "abc",
@@ -289,9 +285,9 @@ ava->test("Closes with 1 valid, 3 missing and 2 invalid environment variables", 
     () => {
       envSafe->EnvSafe.close()
     },
-    ~expectations=ThrowsException.make(
-      ~name="TypeError",
-      ~message=String(`========================================
+    ~expectations={
+      name: "TypeError",
+      message: `========================================
 ❌ Invalid environment variables:
     BOOL_ENV1 ("true"): Failed parsing at root. Reason: Expected Int, received NaN Literal (NaN)
     BOOL_ENV2 ("f"): Failed parsing at root. Reason: Expected true, received false
@@ -299,14 +295,13 @@ ava->test("Closes with 1 valid, 3 missing and 2 invalid environment variables", 
     MISSING_ENV1: Missing value
     MISSING_ENV2: Missing value
     EMPTY_STRING_ENV: Disallowed empty string
-========================================`),
-      (),
-    ),
+========================================`,
+    },
     (),
   )
 })
 
-ava->test(`Doesn't show input value when it's missing for invalid env`, t => {
+test(`Doesn't show input value when it's missing for invalid env`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "INT_ENV": "1_000",
@@ -327,19 +322,18 @@ ava->test(`Doesn't show input value when it's missing for invalid env`, t => {
     () => {
       envSafe->EnvSafe.close()
     },
-    ~expectations=ThrowsException.make(
-      ~name="TypeError",
-      ~message=String(`========================================
+    ~expectations={
+      name: "TypeError",
+      message: `========================================
 ❌ Invalid environment variables:
     MISSING_ENV: Failed parsing at root. Reason: User error
-========================================`),
-      (),
-    ),
+========================================`,
+    },
     (),
   )
 })
 
-ava->test("Applies preprocessor logic for union structs separately", t => {
+test("Applies preprocessor logic for union structs separately", t => {
   let struct = S.union([
     S.bool()->S.transform(~parser=bool => #Bool(bool), ()),
     S.string()->S.transform(~parser=string => #String(string), ()),
