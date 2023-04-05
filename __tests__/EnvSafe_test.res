@@ -246,7 +246,7 @@ test("Successfully get defaulted value when env is missing", t => {
   t->Assert.is(
     envSafe->EnvSafe.get(
       ~name="MISSING_ENV",
-      ~struct=S.string()->S.option->S.defaulted("Defaulted"),
+      ~struct=S.string()->S.option->S.default(() => "Defaulted"),
       (),
     ),
     "Defaulted",
@@ -312,7 +312,7 @@ test(`Doesn't show input value when it's missing for invalid env`, t => {
   t->Assert.is(
     envSafe->EnvSafe.get(
       ~name="MISSING_ENV",
-      ~struct=S.int()->S.option->S.refine(~parser=_ => S.Error.raise("User error"), ()),
+      ~struct=S.int()->S.option->S.refine(~parser=_ => S.fail("User error"), ()),
       (),
     ),
     %raw(`undefined`),

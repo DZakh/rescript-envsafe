@@ -31,7 +31,8 @@ Then add `rescript-envsafe` and `rescript-struct` to `bs-dependencies` in your `
 ```diff
 {
   ...
-+ "bs-dependencies": ["rescript-envsafe", "rescript-struct"]
++ "bs-dependencies": ["rescript-envsafe", "rescript-struct"],
++ "bsc-flags": ["-open RescriptStruct"],
 }
 ```
 

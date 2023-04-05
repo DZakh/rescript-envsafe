@@ -1,4 +1,4 @@
-module Lib = {
+module Stdlib = {
   module Dict = {
     @get_index external get: (Js.Dict.t<'a>, string) => option<'a> = ""
   }
@@ -36,7 +36,8 @@ module Lib = {
 
 module Error = {
   @inline
-  let panic = message => Lib.Exn.raiseError(Lib.Exn.makeError(`[rescript-envsafe] ${message}`))
+  let panic = message =>
+    Stdlib.Exn.raiseError(Stdlib.Exn.makeError(`[rescript-envsafe] ${message}`))
 }
 
 type env = Js.Dict.t<string>
@@ -84,7 +85,7 @@ let close = (envSafe, ()) => {
         let line = "========================================"
         let output = [line]
 
-        maybeInvalidIssues->Lib.Option.forEach(invalidIssues => {
+        maybeInvalidIssues->Stdlib.Option.forEach(invalidIssues => {
           output->Js.Array2.push("❌ Invalid environment variables:")->ignore
           invalidIssues->Js.Array2.forEach(issue => {
             output
@@ -98,7 +99,7 @@ let close = (envSafe, ()) => {
           })
         })
 
-        maybeMissingIssues->Lib.Option.forEach(missingIssues => {
+        maybeMissingIssues->Stdlib.Option.forEach(missingIssues => {
           output->Js.Array2.push("💨 Missing environment variables:")->ignore
           missingIssues->Js.Array2.forEach(issue => {
             output
@@ -117,8 +118,8 @@ let close = (envSafe, ()) => {
       }
 
       Js.Console.error(text)
-      Lib.Window.alert(text)
-      Lib.Exn.raiseError(Lib.Exn.makeTypeError(text))
+      Stdlib.Window.alert(text)
+      Stdlib.Exn.raiseError(Stdlib.Exn.makeTypeError(text))
     }
   }
 }
@@ -187,13 +188,13 @@ let get = (
   }
   let input = switch maybeInlinedInput {
   | Some(inlinedInput) => inlinedInput
-  | None => envSafe.env->Lib.Dict.get(name)
+  | None => envSafe.env->Stdlib.Dict.get(name)
   }
-  let parseResult = input->S.parseWith(prepareStruct(~struct, ~allowEmpty))
+  let parseResult = input->S.parseAnyWith(prepareStruct(~struct, ~allowEmpty))
   switch (parseResult, maybeDevFallback) {
   | (Ok(v), _) => v
   | (Error({code: UnexpectedType({received: "Option"})}), Some(devFallback))
-    if envSafe.env->Lib.Dict.get("NODE_ENV") !== Some("production") => devFallback
+    if envSafe.env->Stdlib.Dict.get("NODE_ENV") !== Some("production") => devFallback
   | (Error(error), _) => {
       envSafe->mixinIssue({name, error, input})
       %raw(`undefined`)

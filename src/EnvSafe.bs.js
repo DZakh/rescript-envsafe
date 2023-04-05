@@ -2,7 +2,7 @@
 'use strict';
 
 var Caml_option = require("rescript/lib/js/caml_option.js");
-var S$ReScriptStruct = require("rescript-struct/src/S.bs.js");
+var S$RescriptStruct = require("rescript-struct/src/S.bs.js");
 
 function alert(message) {
   if ((typeof window !== 'undefined' && window.alert)) {
@@ -60,7 +60,7 @@ function close(envSafe, param) {
           var v = issue.input;
           output.push("    " + issue.name + "" + (
                 v !== undefined ? " (\"" + v + "\")" : ""
-              ) + ": " + S$ReScriptStruct.$$Error.toString(issue.error) + "");
+              ) + ": " + S$RescriptStruct.$$Error.toString(issue.error) + "");
         });
   }
   if (match !== undefined) {
@@ -86,10 +86,10 @@ function get(envSafe, name, struct, allowEmptyOpt, maybeDevFallback, maybeInline
     throw new Error("[rescript-envsafe] EnvSafe is closed. Make a new one to get access to environment variables.");
   }
   var input = maybeInlinedInput !== undefined ? Caml_option.valFromOption(maybeInlinedInput) : envSafe.env[name];
-  var parseResult = S$ReScriptStruct.parseWith(input, S$ReScriptStruct.advancedPreprocess(struct, (function (struct) {
-              var optionalStruct = S$ReScriptStruct.classify(struct);
+  var parseResult = S$RescriptStruct.parseAnyWith(input, S$RescriptStruct.advancedPreprocess(struct, (function (struct) {
+              var optionalStruct = S$RescriptStruct.classify(struct);
               var tagged;
-              tagged = typeof optionalStruct === "number" || optionalStruct.TAG !== /* Option */1 ? optionalStruct : S$ReScriptStruct.classify(optionalStruct._0);
+              tagged = typeof optionalStruct === "number" || optionalStruct.TAG !== /* Option */1 ? optionalStruct : S$RescriptStruct.classify(optionalStruct._0);
               var exit = 0;
               if (typeof tagged === "number") {
                 switch (tagged) {
@@ -197,4 +197,4 @@ function get(envSafe, name, struct, allowEmptyOpt, maybeDevFallback, maybeInline
 exports.make = make;
 exports.close = close;
 exports.get = get;
-/* S-ReScriptStruct Not a pure module */
+/* No side effect */
