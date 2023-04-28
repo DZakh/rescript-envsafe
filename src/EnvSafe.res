@@ -169,7 +169,7 @@ let prepareStruct = (~struct, ~allowEmpty) => {
           }
         },
       )
-    | _ => Sync(unknown => unknown->Obj.magic)
+    | _ => Noop
     }
   }, ())
 }

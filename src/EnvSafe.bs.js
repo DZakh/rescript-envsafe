@@ -105,48 +105,41 @@ function get(envSafe, name, struct, allowEmptyOpt, maybeDevFallback, maybeInline
                                     }
                                   })
                               };
+                      } else {
+                        return /* Noop */0;
                       }
-                      exit = 1;
-                      break;
                   case /* Int */3 :
                   case /* Float */4 :
-                      exit = 3;
-                      break;
-                  case /* Bool */5 :
                       exit = 2;
                       break;
-                  default:
-                    exit = 1;
-                }
-              } else if (tagged.TAG === /* Literal */0) {
-                var tmp = tagged._0;
-                if (typeof tmp === "number") {
-                  exit = 1;
-                } else {
-                  switch (tmp.TAG | 0) {
-                    case /* Int */1 :
-                    case /* Float */2 :
-                        exit = 3;
-                        break;
-                    case /* Bool */3 :
-                        exit = 2;
-                        break;
-                    default:
+                  case /* Bool */5 :
                       exit = 1;
-                  }
+                      break;
+                  default:
+                    return /* Noop */0;
                 }
               } else {
-                exit = 1;
+                if (tagged.TAG !== /* Literal */0) {
+                  return /* Noop */0;
+                }
+                var tmp = tagged._0;
+                if (typeof tmp === "number") {
+                  return /* Noop */0;
+                }
+                switch (tmp.TAG | 0) {
+                  case /* Int */1 :
+                  case /* Float */2 :
+                      exit = 2;
+                      break;
+                  case /* Bool */3 :
+                      exit = 1;
+                      break;
+                  default:
+                    return /* Noop */0;
+                }
               }
               switch (exit) {
                 case 1 :
-                    return {
-                            TAG: /* Sync */0,
-                            _0: (function (unknown) {
-                                return unknown;
-                              })
-                          };
-                case 2 :
                     return {
                             TAG: /* Sync */0,
                             _0: (function (unknown) {
@@ -164,7 +157,7 @@ function get(envSafe, name, struct, allowEmptyOpt, maybeDevFallback, maybeInline
                                 }
                               })
                           };
-                case 3 :
+                case 2 :
                     return {
                             TAG: /* Sync */0,
                             _0: (function (unknown) {

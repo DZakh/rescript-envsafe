@@ -1,6 +1,6 @@
 {
   "name": "rescript-envsafe",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "🔒 Makes sure you don't accidentally deploy apps with missing or invalid environment variables",
   "homepage": "https://github.com/DZakh/rescript-envsafe#readme",
   "keywords": [
@@ -41,10 +41,10 @@
     "@dzakh/rescript-ava": "2.1.0",
     "ava": "5.1.0",
     "rescript": "10.1.4",
-    "rescript-struct": "4.0.0"
+    "rescript-struct": "4.1.0"
   },
   "peerDependencies": {
     "rescript": "10.1.x",
-    "rescript-struct": "4.0.x"
+    "rescript-struct": "4.1.x"
   }
 }
