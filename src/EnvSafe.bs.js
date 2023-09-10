@@ -14,7 +14,18 @@ function alert(message) {
 function mixinIssue(envSafe, issue) {
   var match = issue.error;
   var match$1 = match.code;
-  if (typeof match$1 !== "number" && match$1.TAG === /* UnexpectedType */1 && match$1.received === "Option") {
+  var exit = 0;
+  if (typeof match$1 === "object") {
+    switch (match$1.TAG) {
+      case "InvalidType" :
+      case "InvalidLiteral" :
+          exit = 2;
+          break;
+      default:
+        
+    }
+  }
+  if (exit === 2 && match$1.received === undefined) {
     var missingIssues = envSafe.maybeMissingIssues;
     if (missingIssues !== undefined) {
       missingIssues.push(issue);
@@ -31,7 +42,7 @@ function mixinIssue(envSafe, issue) {
   }
 }
 
-function make(envOpt, param) {
+function make(envOpt) {
   var env = envOpt !== undefined ? Caml_option.valFromOption(envOpt) : process.env;
   return {
           env: env,
@@ -41,7 +52,7 @@ function make(envOpt, param) {
         };
 }
 
-function close(envSafe, param) {
+function close(envSafe) {
   if (envSafe.isLocked) {
     throw new Error("[rescript-envsafe] EnvSafe is already closed.");
   }
@@ -53,25 +64,26 @@ function close(envSafe, param) {
   }
   var line = "========================================";
   var output = [line];
-  if (match$1 !== undefined) {
-    var invalidIssues = Caml_option.valFromOption(match$1);
+  var fn = function (invalidIssues) {
     output.push("❌ Invalid environment variables:");
     invalidIssues.forEach(function (issue) {
-          var v = issue.input;
-          output.push("    " + issue.name + "" + (
-                v !== undefined ? " (\"" + v + "\")" : ""
-              ) + ": " + S$RescriptStruct.$$Error.toString(issue.error) + "");
+          output.push("    " + issue.name + ": " + S$RescriptStruct.$$Error.message(issue.error));
         });
+  };
+  if (match$1 !== undefined) {
+    fn(Caml_option.valFromOption(match$1));
   }
-  if (match !== undefined) {
-    var missingIssues = Caml_option.valFromOption(match);
+  var fn$1 = function (missingIssues) {
     output.push("💨 Missing environment variables:");
     missingIssues.forEach(function (issue) {
           var match = issue.input;
           var tmp;
           tmp = match === "" ? "Disallowed empty string" : "Missing value";
-          output.push("    " + issue.name + ": " + tmp + "");
+          output.push("    " + issue.name + ": " + tmp);
         });
+  };
+  if (match !== undefined) {
+    fn$1(Caml_option.valFromOption(match));
   }
   output.push(line);
   var text = output.join("\n");
@@ -80,24 +92,23 @@ function close(envSafe, param) {
   throw new TypeError(text);
 }
 
-function get(envSafe, name, struct, allowEmptyOpt, maybeDevFallback, maybeInlinedInput, param) {
+function get(envSafe, name, struct, allowEmptyOpt, maybeDevFallback, maybeInlinedInput) {
   var allowEmpty = allowEmptyOpt !== undefined ? allowEmptyOpt : false;
   if (envSafe.isLocked) {
     throw new Error("[rescript-envsafe] EnvSafe is closed. Make a new one to get access to environment variables.");
   }
   var input = maybeInlinedInput !== undefined ? Caml_option.valFromOption(maybeInlinedInput) : envSafe.env[name];
-  var parseResult = S$RescriptStruct.parseAnyWith(input, S$RescriptStruct.advancedPreprocess(struct, (function (struct) {
-              var optionalStruct = S$RescriptStruct.classify(struct);
+  var parseResult = S$RescriptStruct.parseAnyWith(input, S$RescriptStruct.preprocess(struct, (function (s) {
+              var optionalStruct = S$RescriptStruct.classify(s.struct);
               var tagged;
-              tagged = typeof optionalStruct === "number" || optionalStruct.TAG !== /* Option */1 ? optionalStruct : S$RescriptStruct.classify(optionalStruct._0);
+              tagged = typeof optionalStruct !== "object" || optionalStruct.TAG !== "Option" ? optionalStruct : S$RescriptStruct.classify(optionalStruct._0);
               var exit = 0;
-              if (typeof tagged === "number") {
+              if (typeof tagged !== "object") {
                 switch (tagged) {
-                  case /* String */2 :
+                  case "String" :
                       if (allowEmpty === false) {
                         return {
-                                TAG: /* Sync */0,
-                                _0: (function (unknown) {
+                                p: (function (unknown) {
                                     if (unknown === "") {
                                       return ;
                                     } else {
@@ -106,43 +117,41 @@ function get(envSafe, name, struct, allowEmptyOpt, maybeDevFallback, maybeInline
                                   })
                               };
                       } else {
-                        return /* Noop */0;
+                        return {};
                       }
-                  case /* Int */3 :
-                  case /* Float */4 :
+                  case "Int" :
+                  case "Float" :
                       exit = 2;
                       break;
-                  case /* Bool */5 :
+                  case "Bool" :
                       exit = 1;
                       break;
                   default:
-                    return /* Noop */0;
+                    return {};
                 }
               } else {
-                if (tagged.TAG !== /* Literal */0) {
-                  return /* Noop */0;
+                if (tagged.TAG !== "Literal") {
+                  return {};
                 }
                 var tmp = tagged._0;
-                if (typeof tmp === "number") {
-                  return /* Noop */0;
+                if (typeof tmp !== "object") {
+                  return {};
                 }
-                switch (tmp.TAG | 0) {
-                  case /* Int */1 :
-                  case /* Float */2 :
+                switch (tmp.TAG) {
+                  case "Number" :
                       exit = 2;
                       break;
-                  case /* Bool */3 :
+                  case "Boolean" :
                       exit = 1;
                       break;
                   default:
-                    return /* Noop */0;
+                    return {};
                 }
               }
               switch (exit) {
                 case 1 :
                     return {
-                            TAG: /* Sync */0,
-                            _0: (function (unknown) {
+                            p: (function (unknown) {
                                 switch (unknown) {
                                   case "0" :
                                   case "f" :
@@ -159,29 +168,42 @@ function get(envSafe, name, struct, allowEmptyOpt, maybeDevFallback, maybeInline
                           };
                 case 2 :
                     return {
-                            TAG: /* Sync */0,
-                            _0: (function (unknown) {
-                                if (typeof unknown === "string") {
-                                  return (+unknown);
-                                } else {
+                            p: (function (unknown) {
+                                if (typeof unknown !== "string") {
                                   return unknown;
+                                }
+                                var $$float = (+unknown);
+                                if (Number.isNaN($$float)) {
+                                  return unknown;
+                                } else {
+                                  return $$float;
                                 }
                               })
                           };
                 
               }
-            }), undefined, undefined));
-  if (parseResult.TAG === /* Ok */0) {
+            })));
+  if (parseResult.TAG === "Ok") {
     return parseResult._0;
   }
-  var error = parseResult._0;
-  var match = error.code;
-  if (typeof match !== "number" && match.TAG === /* UnexpectedType */1 && match.received === "Option" && maybeDevFallback !== undefined && envSafe.env["NODE_ENV"] !== "production") {
+  var match = parseResult._0.code;
+  var exit = 0;
+  if (typeof match === "object") {
+    switch (match.TAG) {
+      case "InvalidType" :
+      case "InvalidLiteral" :
+          exit = 2;
+          break;
+      default:
+        
+    }
+  }
+  if (exit === 2 && maybeDevFallback !== undefined && match.received === undefined && envSafe.env["NODE_ENV"] !== "production") {
     return Caml_option.valFromOption(maybeDevFallback);
   }
   mixinIssue(envSafe, {
         name: name,
-        error: error,
+        error: parseResult._0,
         input: input
       });
   return undefined;
@@ -190,4 +212,4 @@ function get(envSafe, name, struct, allowEmptyOpt, maybeDevFallback, maybeInline
 exports.make = make;
 exports.close = close;
 exports.get = get;
-/* No side effect */
+/* S-RescriptStruct Not a pure module */

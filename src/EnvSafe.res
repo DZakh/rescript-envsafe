@@ -1,3 +1,5 @@
+@@uncurried
+
 module Stdlib = {
   module Dict = {
     @get_index external get: (Js.Dict.t<'a>, string) => option<'a> = ""
@@ -41,7 +43,7 @@ module Error = {
 }
 
 type env = Js.Dict.t<string>
-type issue = {name: string, error: S.Error.t, input: option<string>}
+type issue = {name: string, error: S.error, input: option<string>}
 type t = {
   env: env,
   mutable isLocked: bool,
@@ -56,7 +58,8 @@ module Env = {
 
 let mixinIssue = (envSafe, issue) => {
   switch issue.error {
-  | {code: UnexpectedType({received: "Option"})} =>
+  | {code: InvalidType({received})}
+  | {code: InvalidLiteral({received})} if received === %raw(`undefined`) =>
     switch envSafe.maybeMissingIssues {
     | Some(missingIssues) => missingIssues->Js.Array2.push(issue)->ignore
     | None => envSafe.maybeMissingIssues = Some([issue])
@@ -69,11 +72,11 @@ let mixinIssue = (envSafe, issue) => {
   }
 }
 
-let make = (~env=Env.default, ()) => {
+let make = (~env=Env.default) => {
   {env, isLocked: false, maybeMissingIssues: None, maybeInvalidIssues: None}
 }
 
-let close = (envSafe, ()) => {
+let close = envSafe => {
   if envSafe.isLocked {
     Error.panic("EnvSafe is already closed.")
   }
@@ -88,14 +91,7 @@ let close = (envSafe, ()) => {
         maybeInvalidIssues->Stdlib.Option.forEach(invalidIssues => {
           output->Js.Array2.push("❌ Invalid environment variables:")->ignore
           invalidIssues->Js.Array2.forEach(issue => {
-            output
-            ->Js.Array2.push(
-              `    ${issue.name}${switch issue.input {
-                | Some(v) => ` ("${v}")`
-                | None => ""
-                }}: ${issue.error->S.Error.toString}`,
-            )
-            ->ignore
+            output->Js.Array2.push(`    ${issue.name}: ${issue.error->S.Error.message}`)->ignore
           })
         })
 
@@ -126,16 +122,15 @@ let close = (envSafe, ()) => {
 
 @inline
 let prepareStruct = (~struct, ~allowEmpty) => {
-  struct->S.advancedPreprocess(~parser=(~struct) => {
-    let tagged = switch struct->S.classify {
+  struct->S.preprocess(s => {
+    let tagged = switch s.struct->S.classify {
     | Option(optionalStruct) => optionalStruct->S.classify
     | tagged => tagged
     }
     switch tagged {
-    | Literal(Bool(_))
-    | Bool =>
-      Sync(
-        unknown => {
+    | Literal(Boolean(_))
+    | Bool => {
+        parser: unknown => {
           switch unknown->Obj.magic {
           | "true"
           | "t"
@@ -146,32 +141,35 @@ let prepareStruct = (~struct, ~allowEmpty) => {
           | _ => unknown->Obj.magic
           }->Obj.magic
         },
-      )
-    | Literal(Int(_))
-    | Literal(Float(_))
+      }
+
+    | Literal(Number(_))
     | Int
-    | Float =>
-      Sync(
-        unknown => {
+    | Float => {
+        parser: unknown => {
           if unknown->Js.typeof === "string" {
-            %raw(`+unknown`)
+            let float = %raw(`+unknown`)
+            if Js.Float.isNaN(float) {
+              unknown
+            } else {
+              float
+            }
           } else {
             unknown
           }
         },
-      )
-    | String if allowEmpty === false =>
-      Sync(
-        unknown => {
+      }
+    | String if allowEmpty === false => {
+        parser: unknown => {
           switch unknown->Obj.magic {
           | "" => Js.undefined->Obj.magic
           | _ => unknown->Obj.magic
           }
         },
-      )
-    | _ => Noop
+      }
+    | _ => {}
     }
-  }, ())
+  })
 }
 
 let get = (
@@ -181,7 +179,6 @@ let get = (
   ~allowEmpty=false,
   ~devFallback as maybeDevFallback=?,
   ~input as maybeInlinedInput=?,
-  (),
 ) => {
   if envSafe.isLocked {
     Error.panic("EnvSafe is closed. Make a new one to get access to environment variables.")
@@ -193,8 +190,10 @@ let get = (
   let parseResult = input->S.parseAnyWith(prepareStruct(~struct, ~allowEmpty))
   switch (parseResult, maybeDevFallback) {
   | (Ok(v), _) => v
-  | (Error({code: UnexpectedType({received: "Option"})}), Some(devFallback))
-    if envSafe.env->Stdlib.Dict.get("NODE_ENV") !== Some("production") => devFallback
+  | (Error({code: InvalidLiteral({received})}), Some(devFallback))
+  | (Error({code: InvalidType({received})}), Some(devFallback))
+    if received === %raw(`undefined`) &&
+      envSafe.env->Stdlib.Dict.get("NODE_ENV") !== Some("production") => devFallback
   | (Error(error), _) => {
       envSafe->mixinIssue({name, error, input})
       %raw(`undefined`)

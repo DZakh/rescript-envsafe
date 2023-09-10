@@ -1,9 +1,11 @@
+@@uncurried
+
 type env
 type t
 
-let make: (~env: env=?, unit) => t
+let make: (~env: env=?) => t
 
-let close: (t, unit) => unit
+let close: t => unit
 
 let get: (
   t,
@@ -12,5 +14,4 @@ let get: (
   ~allowEmpty: bool=?,
   ~devFallback: 'value=?,
   ~input: option<string>=?,
-  unit,
 ) => 'value
