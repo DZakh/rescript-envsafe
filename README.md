@@ -42,26 +42,18 @@ Then add `rescript-envsafe` and `rescript-schema` to `bs-dependencies` in your `
 %%private(let envSafe = EnvSafe.make())
 
 let nodeEnv = envSafe->EnvSafe.get(
-  ~name="NODE_ENV",
-  ~schema=S.union([
+  "NODE_ENV",
+  S.union([
     S.literal(#production),
     S.literal(#development),
     S.literal(#test),
   ]),
   ~devFallback=#development,
 )
-let port = envSafe->EnvSafe.get(
-  ~name="PORT",
-  ~schema=S.int->S.Int.port,
-  ~devFallback=3000
-)
-let apiUrl = envSafe->EnvSafe.get(
-  ~name="API_URL",
-  ~schema=S.string->S.String.url,
-  ~devFallback="https://example.com/graphql",
-)
-let auth0ClientId = envSafe->EnvSafe.get(~name="AUTH0_CLIENT_ID", ~schema=S.string)
-let auth0Domain = envSafe->EnvSafe.get(~name="AUTH0_DOMAIN", ~schema=S.string)
+let port = envSafe->EnvSafe.get("PORT", S.int->S.Int.port, ~devFallback=3000)
+let apiUrl = envSafe->EnvSafe.get("API_URL", S.string->S.String.url, ~devFallback="https://example.com/graphql")
+let auth0ClientId = envSafe->EnvSafe.get("AUTH0_CLIENT_ID", S.string)
+let auth0Domain = envSafe->EnvSafe.get("AUTH0_DOMAIN", S.string)
 
 // 🧠 If you forget to close `envSafe` then invalid vars end up being `undefined` leading to an expected runtime error.
 envSafe->EnvSafe.close
@@ -81,10 +73,10 @@ Creates `envSafe` to start working with environment variables. By default it use
 
 ### **`EnvSafe.get`**
 
-`(EnvSafe.t, ~name: string, ~schema: S.t<'value>, ~allowEmpty: bool=?, ~devFallback: 'value=?, ~input: option<string>=?) => 'value`
+`(EnvSafe.t, string, S.t<'value>, ~allowEmpty: bool=?, ~devFallback: 'value=?, ~input: option<string>=?) => 'value`
 
 ```rescript
-let port = envSafe->EnvSafe.get(~name="PORT", ~schema=S.int->S.Int.port, ~devFallback=3000)
+let port = envSafe->EnvSafe.get("PORT", S.int->S.Int.port, ~devFallback=3000)
 ```
 
 Gets an environment variable from `envSafe` applying coercion and parsing logic of `schema`.

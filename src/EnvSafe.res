@@ -175,8 +175,8 @@ let prepareSchema = (~schema, ~allowEmpty) => {
 
 let get = (
   envSafe,
-  ~name,
-  ~schema,
+  name,
+  schema,
   ~allowEmpty=false,
   ~devFallback as maybeDevFallback=?,
   ~input as maybeInlinedInput=?,
