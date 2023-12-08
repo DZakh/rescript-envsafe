@@ -7,7 +7,7 @@ test("Successfully get String value", t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get(~name="STRING_ENV", ~struct=S.string), "abc", ())
+  t->Assert.is(envSafe->EnvSafe.get(~name="STRING_ENV", ~schema=S.string), "abc", ())
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
   }, ())
@@ -21,7 +21,7 @@ test("Successfully get String value when provided input", t => {
   )
 
   t->Assert.is(
-    envSafe->EnvSafe.get(~name="STRING_ENV", ~struct=S.string, ~input=%raw(`"bar"`)),
+    envSafe->EnvSafe.get(~name="STRING_ENV", ~schema=S.string, ~input=%raw(`"bar"`)),
     "bar",
     (),
   )
@@ -38,7 +38,7 @@ test("Fails to get String value when provided undefined input even with existing
   )
 
   t->Assert.is(
-    envSafe->EnvSafe.get(~name="STRING_ENV", ~struct=S.string, ~input=%raw(`undefined`)),
+    envSafe->EnvSafe.get(~name="STRING_ENV", ~schema=S.string, ~input=%raw(`undefined`)),
     %raw(`undefined`),
     (),
   )
@@ -64,7 +64,7 @@ test("Fails to get String value when env is an empty string", t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get(~name="STRING_ENV", ~struct=S.string), %raw(`undefined`), ())
+  t->Assert.is(envSafe->EnvSafe.get(~name="STRING_ENV", ~schema=S.string), %raw(`undefined`), ())
   t->Assert.throws(
     () => {
       envSafe->EnvSafe.close
@@ -87,7 +87,7 @@ test("Successfully get String value when env is an empty string and allowEmpty i
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get(~name="STRING_ENV", ~struct=S.string, ~allowEmpty=true), "", ())
+  t->Assert.is(envSafe->EnvSafe.get(~name="STRING_ENV", ~schema=S.string, ~allowEmpty=true), "", ())
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
   }, ())
@@ -103,7 +103,7 @@ test(
     )
 
     t->Assert.is(
-      envSafe->EnvSafe.get(~name="STRING_ENV", ~struct=S.literal(""), ~allowEmpty=false),
+      envSafe->EnvSafe.get(~name="STRING_ENV", ~schema=S.literal(""), ~allowEmpty=false),
       "",
       (),
     )
@@ -120,7 +120,7 @@ test("Fails to get value when env is missing", t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get(~name="MISSING_ENV", ~struct=S.string), %raw(`undefined`), ())
+  t->Assert.is(envSafe->EnvSafe.get(~name="MISSING_ENV", ~schema=S.string), %raw(`undefined`), ())
   t->Assert.throws(
     () => {
       envSafe->EnvSafe.close
@@ -146,7 +146,7 @@ test("Uses devFallback value when env is missing", t => {
   t->Assert.is(
     envSafe->EnvSafe.get(
       ~name="MISSING_ENV",
-      ~struct=S.literal("invalid")->S.variant(_ => #polymorphicToTestFunctionType2),
+      ~schema=S.literal("invalid")->S.variant(_ => #polymorphicToTestFunctionType2),
       ~devFallback=#polymorphicToTestFunctionType,
     ),
     #polymorphicToTestFunctionType,
@@ -168,7 +168,7 @@ test("Doesn't use devFallback value when NODE_ENV is production", t => {
   t->Assert.is(
     envSafe->EnvSafe.get(
       ~name="MISSING_ENV",
-      ~struct=S.literal("invalid")->S.variant(_ => #polymorphicToTestFunctionType2),
+      ~schema=S.literal("invalid")->S.variant(_ => #polymorphicToTestFunctionType2),
       ~devFallback=#polymorphicToTestFunctionType,
     ),
     %raw(`undefined`),
@@ -196,7 +196,7 @@ test("Successfully get optional value when env is missing", t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get(~name="MISSING_ENV", ~struct=S.string->S.option), None, ())
+  t->Assert.is(envSafe->EnvSafe.get(~name="MISSING_ENV", ~schema=S.string->S.option), None, ())
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
   }, ())
@@ -212,7 +212,7 @@ test("Successfully get defaulted value when env is missing", t => {
   t->Assert.is(
     envSafe->EnvSafe.get(
       ~name="MISSING_ENV",
-      ~struct=S.string->S.option->S.Option.getOr("Defaulted"),
+      ~schema=S.string->S.option->S.Option.getOr("Defaulted"),
     ),
     "Defaulted",
     (),
@@ -233,17 +233,17 @@ test("Closes with 1 valid, 3 missing and 2 invalid environment variables", t => 
   )
 
   // valid 1
-  t->Assert.is(envSafe->EnvSafe.get(~name="STRING_ENV", ~struct=S.string), "abc", ())
+  t->Assert.is(envSafe->EnvSafe.get(~name="STRING_ENV", ~schema=S.string), "abc", ())
   // invalid 1
-  envSafe->EnvSafe.get(~name="BOOL_ENV1", ~struct=S.int)->ignore
+  envSafe->EnvSafe.get(~name="BOOL_ENV1", ~schema=S.int)->ignore
   // invalid 2
-  envSafe->EnvSafe.get(~name="BOOL_ENV2", ~struct=S.literal(true))->ignore
+  envSafe->EnvSafe.get(~name="BOOL_ENV2", ~schema=S.literal(true))->ignore
   // missing 1
-  envSafe->EnvSafe.get(~name="MISSING_ENV1", ~struct=S.int)->ignore
+  envSafe->EnvSafe.get(~name="MISSING_ENV1", ~schema=S.int)->ignore
   // missing 2
-  envSafe->EnvSafe.get(~name="MISSING_ENV2", ~struct=S.string)->ignore
+  envSafe->EnvSafe.get(~name="MISSING_ENV2", ~schema=S.string)->ignore
   // missing 3
-  envSafe->EnvSafe.get(~name="EMPTY_STRING_ENV", ~struct=S.string)->ignore
+  envSafe->EnvSafe.get(~name="EMPTY_STRING_ENV", ~schema=S.string)->ignore
 
   t->Assert.throws(
     () => {
@@ -275,7 +275,7 @@ test(`Doesn't show input value when it's missing for invalid env`, t => {
   t->Assert.is(
     envSafe->EnvSafe.get(
       ~name="MISSING_ENV",
-      ~struct=S.int->S.option->S.refine(s => _ => s.fail("User error")),
+      ~schema=S.int->S.option->S.refine(s => _ => s.fail("User error")),
     ),
     %raw(`undefined`),
     (),
@@ -295,8 +295,8 @@ test(`Doesn't show input value when it's missing for invalid env`, t => {
   )
 })
 
-test("Applies preprocessor logic for union structs separately", t => {
-  let struct = S.union([
+test("Applies preprocessor logic for union schemas separately", t => {
+  let schema = S.union([
     S.bool->S.variant(bool => #Bool(bool)),
     S.string->S.variant(string => #String(string)),
     S.union([S.int->S.variant(int => #Int(int)), S.string->S.variant(string => #String(string))]),
@@ -305,17 +305,17 @@ test("Applies preprocessor logic for union structs separately", t => {
   let envSafe = EnvSafe.make(~env=Obj.magic(Js.Dict.empty()))
 
   t->Assert.deepEqual(
-    envSafe->EnvSafe.get(~name="STRING_VALID_ENV", ~struct, ~input=Some("foo")),
+    envSafe->EnvSafe.get(~name="STRING_VALID_ENV", ~schema, ~input=Some("foo")),
     #String("foo"),
     (),
   )
   t->Assert.deepEqual(
-    envSafe->EnvSafe.get(~name="STRING_EMPTY_ENV", ~struct, ~input=Some(""), ~allowEmpty=true),
+    envSafe->EnvSafe.get(~name="STRING_EMPTY_ENV", ~schema, ~input=Some(""), ~allowEmpty=true),
     #String(""),
     (),
   )
   t->Assert.deepEqual(
-    envSafe->EnvSafe.get(~name="BOOL_VALID_ENV", ~struct, ~input=Some("f")),
+    envSafe->EnvSafe.get(~name="BOOL_VALID_ENV", ~schema, ~input=Some("f")),
     #Bool(false),
     (),
   )

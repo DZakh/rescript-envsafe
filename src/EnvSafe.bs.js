@@ -2,7 +2,7 @@
 'use strict';
 
 var Caml_option = require("rescript/lib/js/caml_option.js");
-var S$RescriptStruct = require("rescript-struct/src/S.bs.js");
+var S$RescriptSchema = require("rescript-schema/src/S.bs.js");
 
 function alert(message) {
   if ((typeof window !== 'undefined' && window.alert)) {
@@ -67,7 +67,7 @@ function close(envSafe) {
   var fn = function (invalidIssues) {
     output.push("❌ Invalid environment variables:");
     invalidIssues.forEach(function (issue) {
-          output.push("    " + issue.name + ": " + S$RescriptStruct.$$Error.message(issue.error));
+          output.push("    " + issue.name + ": " + S$RescriptSchema.$$Error.message(issue.error));
         });
   };
   if (match$1 !== undefined) {
@@ -92,16 +92,16 @@ function close(envSafe) {
   throw new TypeError(text);
 }
 
-function get(envSafe, name, struct, allowEmptyOpt, maybeDevFallback, maybeInlinedInput) {
+function get(envSafe, name, schema, allowEmptyOpt, maybeDevFallback, maybeInlinedInput) {
   var allowEmpty = allowEmptyOpt !== undefined ? allowEmptyOpt : false;
   if (envSafe.isLocked) {
     throw new Error("[rescript-envsafe] EnvSafe is closed. Make a new one to get access to environment variables.");
   }
   var input = maybeInlinedInput !== undefined ? Caml_option.valFromOption(maybeInlinedInput) : envSafe.env[name];
-  var parseResult = S$RescriptStruct.parseAnyWith(input, S$RescriptStruct.preprocess(struct, (function (s) {
-              var optionalStruct = S$RescriptStruct.classify(s.struct);
+  var parseResult = S$RescriptSchema.parseAnyWith(input, S$RescriptSchema.preprocess(schema, (function (s) {
+              var optionalSchema = S$RescriptSchema.classify(s.schema);
               var tagged;
-              tagged = typeof optionalStruct !== "object" || optionalStruct.TAG !== "Option" ? optionalStruct : S$RescriptStruct.classify(optionalStruct._0);
+              tagged = typeof optionalSchema !== "object" || optionalSchema.TAG !== "Option" ? optionalSchema : S$RescriptSchema.classify(optionalSchema._0);
               var exit = 0;
               if (typeof tagged !== "object") {
                 switch (tagged) {
@@ -212,4 +212,4 @@ function get(envSafe, name, struct, allowEmptyOpt, maybeDevFallback, maybeInline
 exports.make = make;
 exports.close = close;
 exports.get = get;
-/* S-RescriptStruct Not a pure module */
+/* S-RescriptSchema Not a pure module */

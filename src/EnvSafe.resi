@@ -10,7 +10,7 @@ let close: t => unit
 let get: (
   t,
   ~name: string,
-  ~struct: S.t<'value>,
+  ~schema: S.t<'value>,
   ~allowEmpty: bool=?,
   ~devFallback: 'value=?,
   ~input: option<string>=?,

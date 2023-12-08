@@ -53,7 +53,8 @@ type t = {
 
 module Env = {
   @val
-  external default: Js.Dict.t<string> = "process.env"
+  external // FIXME: process might be missing
+  default: Js.Dict.t<string> = "process.env"
 }
 
 let mixinIssue = (envSafe, issue) => {
@@ -121,10 +122,10 @@ let close = envSafe => {
 }
 
 @inline
-let prepareStruct = (~struct, ~allowEmpty) => {
-  struct->S.preprocess(s => {
-    let tagged = switch s.struct->S.classify {
-    | Option(optionalStruct) => optionalStruct->S.classify
+let prepareSchema = (~schema, ~allowEmpty) => {
+  schema->S.preprocess(s => {
+    let tagged = switch s.schema->S.classify {
+    | Option(optionalSchema) => optionalSchema->S.classify
     | tagged => tagged
     }
     switch tagged {
@@ -175,7 +176,7 @@ let prepareStruct = (~struct, ~allowEmpty) => {
 let get = (
   envSafe,
   ~name,
-  ~struct,
+  ~schema,
   ~allowEmpty=false,
   ~devFallback as maybeDevFallback=?,
   ~input as maybeInlinedInput=?,
@@ -187,7 +188,7 @@ let get = (
   | Some(inlinedInput) => inlinedInput
   | None => envSafe.env->Stdlib.Dict.get(name)
   }
-  let parseResult = input->S.parseAnyWith(prepareStruct(~struct, ~allowEmpty))
+  let parseResult = input->S.parseAnyWith(prepareSchema(~schema, ~allowEmpty))
   switch (parseResult, maybeDevFallback) {
   | (Ok(v), _) => v
   | (Error({code: InvalidLiteral({received})}), Some(devFallback))

@@ -16,23 +16,23 @@ Heavily inspired by the great project [envsafe](https://github.com/KATT/envsafe)
 
 - **Always strict** - only access the variables you have defined
 - Built for node.js **and** the browser
-- **Composable** parsers with **[rescript-struct](https://github.com/DZakh/rescript-struct)**
+- **Composable** parsers with **[rescript-schema](https://github.com/DZakh/rescript-schema)**
 
 ## How to use
 
 ### Install
 
 ```sh
-npm install rescript-envsafe rescript-struct
+npm install rescript-envsafe rescript-schema
 ```
 
-Then add `rescript-envsafe` and `rescript-struct` to `bs-dependencies` in your `bsconfig.json`:
+Then add `rescript-envsafe` and `rescript-schema` to `bs-dependencies` in your `rescript.json`:
 
 ```diff
 {
   ...
-+ "bs-dependencies": ["rescript-envsafe", "rescript-struct"],
-+ "bsc-flags": ["-open RescriptStruct"],
++ "bs-dependencies": ["rescript-envsafe", "rescript-schema"],
++ "bsc-flags": ["-open RescriptSchema"],
 }
 ```
 
@@ -43,7 +43,7 @@ Then add `rescript-envsafe` and `rescript-struct` to `bs-dependencies` in your `
 
 let nodeEnv = envSafe->EnvSafe.get(
   ~name="NODE_ENV",
-  ~struct=S.union([
+  ~schema=S.union([
     S.literal(#production),
     S.literal(#development),
     S.literal(#test),
@@ -52,16 +52,16 @@ let nodeEnv = envSafe->EnvSafe.get(
 )
 let port = envSafe->EnvSafe.get(
   ~name="PORT",
-  ~struct=S.int->S.Int.port,
+  ~schema=S.int->S.Int.port,
   ~devFallback=3000
 )
 let apiUrl = envSafe->EnvSafe.get(
   ~name="API_URL",
-  ~struct=S.string->S.String.url,
+  ~schema=S.string->S.String.url,
   ~devFallback="https://example.com/graphql",
 )
-let auth0ClientId = envSafe->EnvSafe.get(~name="AUTH0_CLIENT_ID", ~struct=S.string)
-let auth0Domain = envSafe->EnvSafe.get(~name="AUTH0_DOMAIN", ~struct=S.string)
+let auth0ClientId = envSafe->EnvSafe.get(~name="AUTH0_CLIENT_ID", ~schema=S.string)
+let auth0Domain = envSafe->EnvSafe.get(~name="AUTH0_DOMAIN", ~schema=S.string)
 
 // 🧠 If you forget to close `envSafe` then invalid vars end up being `undefined` leading to an expected runtime error.
 envSafe->EnvSafe.close
@@ -81,21 +81,21 @@ Creates `envSafe` to start working with environment variables. By default it use
 
 ### **`EnvSafe.get`**
 
-`(EnvSafe.t, ~name: string, ~struct: S.t<'value>, ~allowEmpty: bool=?, ~devFallback: 'value=?, ~input: option<string>=?) => 'value`
+`(EnvSafe.t, ~name: string, ~schema: S.t<'value>, ~allowEmpty: bool=?, ~devFallback: 'value=?, ~input: option<string>=?) => 'value`
 
 ```rescript
-let port = envSafe->EnvSafe.get(~name="PORT", ~struct=S.int->S.Int.port, ~devFallback=3000)
+let port = envSafe->EnvSafe.get(~name="PORT", ~schema=S.int->S.Int.port, ~devFallback=3000)
 ```
 
-Gets an environment variable from `envSafe` applying coercion and parsing logic of `struct`.
+Gets an environment variable from `envSafe` applying coercion and parsing logic of `schema`.
 
 #### Possible options
 
 | Name          | Type          | Description                                                                                                                                                                                                                                                                           |
 | ------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `name`        | `string`      | Name of the environment variable                                                                                                                                                                                                                                                      |
-| `struct`      | `S.t<'value>` | A struct created with **[rescript-struct](https://github.com/DZakh/rescript-struct)**. It's used for coercion and parsing. For bool structs coerces `"0", "1", "true", "false", "t", "f"` to boolean values. For int and float structs coerces string to number.                      |
-| `devFallback` | `'value=?`    | A fallback value to use only when `NODE_ENV` is not `production`. This is handy for env vars that are required for production environments, but optional for development and testing. If you need to set fallback value for all environments, you can use `S.Option.getOr` on struct. |
+| `schema`      | `S.t<'value>` | A schema created with **[rescript-schema](https://github.com/DZakh/rescript-schema)**. It's used for coercion and parsing. For bool schemas coerces `"0", "1", "true", "false", "t", "f"` to boolean values. For int and float schemas coerces string to number.                      |
+| `devFallback` | `'value=?`    | A fallback value to use only when `NODE_ENV` is not `production`. This is handy for env vars that are required for production environments, but optional for development and testing. If you need to set fallback value for all environments, you can use `S.Option.getOr` on schema. |
 | `input`       | `string=?`    | As some environments don't allow you to dynamically read env vars, we can manually put it in as well. Example: `input=%raw("process.env.NEXT_PUBLIC_API_URL")`.                                                                                                                       |
 | `allowEmpty`  | `bool=false`  | Default behavior is `false` which treats empty strings as the value is missing. if explicit empty strings are OK, pass in `true`.                                                                                                                                                     |
 
