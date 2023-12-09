@@ -1,5 +1,7 @@
 @@uncurried
 
+%%private(external magic: 'a => 'b = "%identity")
+
 module Stdlib = {
   module Dict = {
     @get_index external get: (Js.Dict.t<'a>, string) => option<'a> = ""
@@ -32,7 +34,7 @@ module Stdlib = {
     @new
     external makeTypeError: string => error = "TypeError"
 
-    let raiseError = (error: error): 'a => error->Obj.magic->raise
+    let raiseError = (error: error): 'a => error->magic->raise
   }
 }
 
@@ -56,6 +58,8 @@ module Env = {
   external // FIXME: process might be missing
   default: Js.Dict.t<string> = "process.env"
 }
+
+// TODO: When can't coerce, default to json parsing
 
 let mixinIssue = (envSafe, issue) => {
   switch issue.error {
@@ -132,15 +136,15 @@ let prepareSchema = (~schema, ~allowEmpty) => {
     | Literal(Boolean(_))
     | Bool => {
         parser: unknown => {
-          switch unknown->Obj.magic {
+          switch unknown->magic {
           | "true"
           | "t"
           | "1" => true
           | "false"
           | "f"
           | "0" => false
-          | _ => unknown->Obj.magic
-          }->Obj.magic
+          | _ => unknown->magic
+          }->magic
         },
       }
 
@@ -162,13 +166,28 @@ let prepareSchema = (~schema, ~allowEmpty) => {
       }
     | String if allowEmpty === false => {
         parser: unknown => {
-          switch unknown->Obj.magic {
-          | "" => Js.undefined->Obj.magic
-          | _ => unknown->Obj.magic
+          switch unknown->magic {
+          | "" => Js.undefined->magic
+          | _ => unknown->magic
           }
         },
       }
-    | _ => {}
+    | String
+    | Literal(String(_))
+    | JSON
+    | Union(_)
+    | Unknown
+    | Never => {}
+    | _ => {
+        parser: unknown => {
+          if unknown->Js.typeof === "string" {
+            let string = unknown->(magic: unknown => string)
+            string->Js.Json.parseExn->magic
+          } else {
+            unknown
+          }
+        },
+      }
     }
   })
 }

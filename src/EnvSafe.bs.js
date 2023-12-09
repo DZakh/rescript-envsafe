@@ -121,35 +121,56 @@ function get(envSafe, name, schema, allowEmptyOpt, maybeDevFallback, maybeInline
                       }
                   case "Int" :
                   case "Float" :
-                      exit = 2;
+                      exit = 3;
                       break;
                   case "Bool" :
-                      exit = 1;
-                      break;
-                  default:
-                    return {};
-                }
-              } else {
-                if (tagged.TAG !== "Literal") {
-                  return {};
-                }
-                var tmp = tagged._0;
-                if (typeof tmp !== "object") {
-                  return {};
-                }
-                switch (tmp.TAG) {
-                  case "Number" :
                       exit = 2;
                       break;
-                  case "Boolean" :
-                      exit = 1;
+                  case "Never" :
+                  case "Unknown" :
+                  case "JSON" :
+                      return {};
+                  
+                }
+              } else {
+                switch (tagged.TAG) {
+                  case "Literal" :
+                      var tmp = tagged._0;
+                      if (typeof tmp !== "object") {
+                        exit = 1;
+                      } else {
+                        switch (tmp.TAG) {
+                          case "String" :
+                              return {};
+                          case "Number" :
+                              exit = 3;
+                              break;
+                          case "Boolean" :
+                              exit = 2;
+                              break;
+                          default:
+                            exit = 1;
+                        }
+                      }
                       break;
+                  case "Union" :
+                      return {};
                   default:
-                    return {};
+                    exit = 1;
                 }
               }
               switch (exit) {
                 case 1 :
+                    return {
+                            p: (function (unknown) {
+                                if (typeof unknown === "string") {
+                                  return JSON.parse(unknown);
+                                } else {
+                                  return unknown;
+                                }
+                              })
+                          };
+                case 2 :
                     return {
                             p: (function (unknown) {
                                 switch (unknown) {
@@ -166,7 +187,7 @@ function get(envSafe, name, schema, allowEmptyOpt, maybeDevFallback, maybeInline
                                 }
                               })
                           };
-                case 2 :
+                case 3 :
                     return {
                             p: (function (unknown) {
                                 if (typeof unknown !== "string") {
