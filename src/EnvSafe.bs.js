@@ -92,7 +92,7 @@ function close(envSafe) {
   throw new TypeError(text);
 }
 
-function get(envSafe, name, schema, allowEmptyOpt, maybeDevFallback, maybeInlinedInput) {
+function get(envSafe, name, schema, allowEmptyOpt, maybeFallback, maybeDevFallback, maybeInlinedInput) {
   var allowEmpty = allowEmptyOpt !== undefined ? allowEmptyOpt : false;
   if (envSafe.isLocked) {
     throw new Error("[rescript-envsafe] EnvSafe is closed. Make a new one to get access to environment variables.");
@@ -204,23 +204,34 @@ function get(envSafe, name, schema, allowEmptyOpt, maybeDevFallback, maybeInline
                 
               }
             })));
+  var exit = 0;
   if (parseResult.TAG === "Ok") {
     return parseResult._0;
   }
   var match = parseResult._0.code;
-  var exit = 0;
+  var exit$1 = 0;
   if (typeof match === "object") {
     switch (match.TAG) {
       case "InvalidType" :
       case "InvalidLiteral" :
-          exit = 2;
+          exit$1 = 3;
           break;
       default:
         
     }
   }
-  if (exit === 2 && maybeDevFallback !== undefined && match.received === undefined && envSafe.env["NODE_ENV"] !== "production") {
-    return Caml_option.valFromOption(maybeDevFallback);
+  if (exit$1 === 3) {
+    if (maybeDevFallback !== undefined) {
+      if (match.received === undefined && envSafe.env["NODE_ENV"] !== "production") {
+        return Caml_option.valFromOption(maybeDevFallback);
+      }
+      exit = 2;
+    } else {
+      exit = 2;
+    }
+  }
+  if (exit === 2 && maybeFallback !== undefined && parseResult._0.code.received === undefined) {
+    return Caml_option.valFromOption(maybeFallback);
   }
   mixinIssue(envSafe, {
         name: name,

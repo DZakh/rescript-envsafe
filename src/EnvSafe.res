@@ -197,6 +197,7 @@ let get = (
   name,
   schema,
   ~allowEmpty=false,
+  ~fallback as maybeFallback=?,
   ~devFallback as maybeDevFallback=?,
   ~input as maybeInlinedInput=?,
 ) => {
@@ -208,13 +209,16 @@ let get = (
   | None => envSafe.env->Stdlib.Dict.get(name)
   }
   let parseResult = input->S.parseAnyWith(prepareSchema(~schema, ~allowEmpty))
-  switch (parseResult, maybeDevFallback) {
-  | (Ok(v), _) => v
-  | (Error({code: InvalidLiteral({received})}), Some(devFallback))
-  | (Error({code: InvalidType({received})}), Some(devFallback))
+  switch (parseResult, maybeDevFallback, maybeFallback) {
+  | (Ok(v), _, _) => v
+  | (Error({code: InvalidLiteral({received})}), Some(devFallback), _)
+  | (Error({code: InvalidType({received})}), Some(devFallback), _)
     if received === %raw(`undefined`) &&
       envSafe.env->Stdlib.Dict.get("NODE_ENV") !== Some("production") => devFallback
-  | (Error(error), _) => {
+  | (Error({code: InvalidLiteral({received})}), _, Some(fallback))
+  | (Error({code: InvalidType({received})}), _, Some(fallback))
+    if received === %raw(`undefined`) => fallback
+  | (Error(error), _, _) => {
       envSafe->mixinIssue({name, error, input})
       %raw(`undefined`)
     }

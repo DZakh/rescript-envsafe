@@ -149,6 +149,53 @@ test("Uses devFallback value when env is missing", t => {
   }, ())
 })
 
+test("Uses fallback value when env is missing", t => {
+  let envSafe = EnvSafe.make(
+    ~env=Obj.magic({
+      "STRING_ENV": "abc",
+    }),
+  )
+
+  t->Assert.is(
+    envSafe->EnvSafe.get(
+      "MISSING_ENV",
+      S.literal("invalid")->S.variant(_ => #polymorphicToTestFunctionType2),
+      ~fallback=#polymorphicToTestFunctionType,
+    ),
+    #polymorphicToTestFunctionType,
+    (),
+  )
+  t->Assert.notThrows(() => {
+    envSafe->EnvSafe.close
+  }, ())
+})
+
+type fallbackTestVariant = ReadResult | FallbackResult | DevFallbackResult
+test(
+  "Uses devFallback value over fallback when env is missing and NODE_ENV is not set to production",
+  t => {
+    let envSafe = EnvSafe.make(
+      ~env=Obj.magic({
+        "STRING_ENV": "abc",
+      }),
+    )
+
+    t->Assert.is(
+      envSafe->EnvSafe.get(
+        "MISSING_ENV",
+        S.literal(ReadResult),
+        ~fallback=FallbackResult,
+        ~devFallback=DevFallbackResult,
+      ),
+      DevFallbackResult,
+      (),
+    )
+    t->Assert.notThrows(() => {
+      envSafe->EnvSafe.close
+    }, ())
+  },
+)
+
 test("Doesn't use devFallback value when NODE_ENV is production", t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
@@ -309,4 +356,24 @@ test("Applies preprocessor logic for union schemas separately", t => {
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
   }, ())
+})
+
+test("Fails to access EnvSafe after close", t => {
+  let envSafe = EnvSafe.make(
+    ~env=Obj.magic({
+      "STRING_ENV": "abc",
+    }),
+  )
+
+  t->Assert.notThrows(() => {
+    envSafe->EnvSafe.close
+  }, ())
+
+  t->Assert.throws(
+    () => {envSafe->EnvSafe.get("STRING_ENV", S.string)},
+    ~expectations={
+      message: "[rescript-envsafe] EnvSafe is closed. Make a new one to get access to environment variables.",
+    },
+    (),
+  )
 })
