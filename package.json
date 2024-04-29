@@ -25,11 +25,11 @@
   "files": [
     "src/**/*.res",
     "src/**/*.resi",
-    "bsconfig.json"
+    "rescript.json"
   ],
   "scripts": {
     "res:build": "rescript",
-    "res": "rescript build -w",
+    "res": "rescript -w",
     "test": "ava"
   },
   "ava": {
@@ -40,11 +40,11 @@
   "devDependencies": {
     "@dzakh/rescript-ava": "2.3.0",
     "ava": "5.2.0",
-    "rescript": "11.0.0-rc.7",
-    "rescript-schema": "6.3.0"
+    "rescript": "11.1.0",
+    "rescript-schema": "6.4.0"
   },
   "peerDependencies": {
-    "rescript": "11.0.x || ~11.0.0-rc",
+    "rescript": "11.x",
     "rescript-schema": "6.x"
   }
 }

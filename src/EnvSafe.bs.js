@@ -43,7 +43,7 @@ function mixinIssue(envSafe, issue) {
 }
 
 function make(envOpt) {
-  var env = envOpt !== undefined ? Caml_option.valFromOption(envOpt) : process.env;
+  var env = envOpt !== undefined ? envOpt : process.env;
   return {
           env: env,
           isLocked: false,
