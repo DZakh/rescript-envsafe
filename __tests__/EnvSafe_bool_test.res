@@ -191,3 +191,29 @@ test(`Successfully get optional Bool value when the env is "1"`, t => {
     envSafe->EnvSafe.close
   }, ())
 })
+
+test(`Successfully get None for optional Bool value when the env is undefined`, t => {
+  let envSafe = EnvSafe.make(
+    ~env=Obj.magic({
+      "ANOTHER_ENV": "1",
+    }),
+  )
+
+  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.option(S.bool)), None, ())
+  t->Assert.notThrows(() => {
+    envSafe->EnvSafe.close
+  }, ())
+})
+
+test(`Successfully get None for optional Bool value when the env is ""`, t => {
+  let envSafe = EnvSafe.make(
+    ~env=Obj.magic({
+      "BOOL_ENV": "",
+    }),
+  )
+
+  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.option(S.bool)), None, ())
+  t->Assert.notThrows(() => {
+    envSafe->EnvSafe.close
+  }, ())
+})

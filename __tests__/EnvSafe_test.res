@@ -170,6 +170,27 @@ test("Uses fallback value when env is missing", t => {
   }, ())
 })
 
+test("Uses fallback value when env is missing for union schema", t => {
+  let envSafe = EnvSafe.make(
+    ~env=Obj.magic({
+      "STRING_ENV": "abc",
+    }),
+  )
+
+  t->Assert.is(
+    envSafe->EnvSafe.get(
+      "MISSING_ENV",
+      S.union([S.literal("foo"), S.literal("bar")]),
+      ~fallback="fallback",
+    ),
+    "fallback",
+    (),
+  )
+  t->Assert.notThrows(() => {
+    envSafe->EnvSafe.close
+  }, ())
+})
+
 type fallbackTestVariant = ReadResult | FallbackResult | DevFallbackResult
 test(
   "Uses devFallback value over fallback when env is missing and NODE_ENV is not set to production",
