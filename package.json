@@ -38,7 +38,7 @@
     ]
   },
   "devDependencies": {
-    "@dzakh/rescript-ava": "2.3.0",
+    "@dzakh/rescript-ava": "3.0.0",
     "ava": "5.2.0",
     "rescript": "11.1.0",
     "rescript-schema": "6.4.0"

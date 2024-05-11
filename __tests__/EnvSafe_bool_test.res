@@ -7,10 +7,10 @@ test(`Successfully get Bool value when the env is "1"`, t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.bool), true, ())
+  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.bool), true)
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
-  }, ())
+  })
 })
 
 test(`Successfully get Bool value when the env is "t"`, t => {
@@ -20,10 +20,10 @@ test(`Successfully get Bool value when the env is "t"`, t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.bool), true, ())
+  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.bool), true)
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
-  }, ())
+  })
 })
 
 test(`Successfully get Bool value when the env is "true"`, t => {
@@ -33,10 +33,10 @@ test(`Successfully get Bool value when the env is "true"`, t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.bool), true, ())
+  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.bool), true)
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
-  }, ())
+  })
 })
 
 test(`Successfully get Bool value when the env is "false"`, t => {
@@ -46,10 +46,10 @@ test(`Successfully get Bool value when the env is "false"`, t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.bool), false, ())
+  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.bool), false)
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
-  }, ())
+  })
 })
 
 test(`Successfully get Bool value when the env is "f"`, t => {
@@ -59,10 +59,10 @@ test(`Successfully get Bool value when the env is "f"`, t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.bool), false, ())
+  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.bool), false)
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
-  }, ())
+  })
 })
 
 test(`Successfully get Bool value when the env is "0"`, t => {
@@ -72,10 +72,10 @@ test(`Successfully get Bool value when the env is "0"`, t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.bool), false, ())
+  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.bool), false)
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
-  }, ())
+  })
 })
 
 test(`Successfully get Literal Bool (true) value when the env is "1"`, t => {
@@ -85,10 +85,10 @@ test(`Successfully get Literal Bool (true) value when the env is "1"`, t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.literal(true)), true, ())
+  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.literal(true)), true)
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
-  }, ())
+  })
 })
 
 test(`Successfully get Literal Bool (true) value when the env is "t"`, t => {
@@ -98,10 +98,10 @@ test(`Successfully get Literal Bool (true) value when the env is "t"`, t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.literal(true)), true, ())
+  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.literal(true)), true)
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
-  }, ())
+  })
 })
 
 test(`Successfully get Literal Bool (true) value when the env is "true"`, t => {
@@ -111,10 +111,10 @@ test(`Successfully get Literal Bool (true) value when the env is "true"`, t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.literal(true)), true, ())
+  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.literal(true)), true)
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
-  }, ())
+  })
 })
 
 test(`Successfully get Lietarl Bool (false) value when the env is "false"`, t => {
@@ -124,10 +124,10 @@ test(`Successfully get Lietarl Bool (false) value when the env is "false"`, t =>
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.literal(false)), false, ())
+  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.literal(false)), false)
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
-  }, ())
+  })
 })
 
 test(`Successfully get Lietarl Bool (false) value when the env is "f"`, t => {
@@ -137,10 +137,10 @@ test(`Successfully get Lietarl Bool (false) value when the env is "f"`, t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.literal(false)), false, ())
+  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.literal(false)), false)
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
-  }, ())
+  })
 })
 
 test(`Successfully get Lietarl Bool (false) value when the env is "0"`, t => {
@@ -150,10 +150,10 @@ test(`Successfully get Lietarl Bool (false) value when the env is "0"`, t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.literal(false)), false, ())
+  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.literal(false)), false)
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
-  }, ())
+  })
 })
 
 test(`Fails to get Bool value when the env is "2"`, t => {
@@ -163,7 +163,7 @@ test(`Fails to get Bool value when the env is "2"`, t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.bool), %raw(`undefined`), ())
+  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.bool), %raw(`undefined`))
   t->Assert.throws(
     () => {
       envSafe->EnvSafe.close
@@ -175,7 +175,6 @@ test(`Fails to get Bool value when the env is "2"`, t => {
     BOOL_ENV: Failed parsing at root. Reason: Expected Bool, received "2"
 ========================================`,
     },
-    (),
   )
 })
 
@@ -186,10 +185,10 @@ test(`Successfully get optional Bool value when the env is "1"`, t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.option(S.bool)), Some(true), ())
+  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.option(S.bool)), Some(true))
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
-  }, ())
+  })
 })
 
 test(`Successfully get None for optional Bool value when the env is undefined`, t => {
@@ -199,10 +198,10 @@ test(`Successfully get None for optional Bool value when the env is undefined`, 
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.option(S.bool)), None, ())
+  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.option(S.bool)), None)
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
-  }, ())
+  })
 })
 
 test(`Successfully get None for optional Bool value when the env is ""`, t => {
@@ -212,8 +211,8 @@ test(`Successfully get None for optional Bool value when the env is ""`, t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.option(S.bool)), None, ())
+  t->Assert.is(envSafe->EnvSafe.get("BOOL_ENV", S.option(S.bool)), None)
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
-  }, ())
+  })
 })
