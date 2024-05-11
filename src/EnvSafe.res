@@ -45,12 +45,13 @@ module Error = {
 }
 
 type env = Js.Dict.t<string>
-type issue = {name: string, error: S.error, input: option<string>}
+type invalidIssue = {name: string, error: S.error, input: option<string>}
+type missingIssue = {name: string, input: option<string>}
 type t = {
   env: env,
   mutable isLocked: bool,
-  mutable maybeMissingIssues: option<array<issue>>,
-  mutable maybeInvalidIssues: option<array<issue>>,
+  mutable maybeMissingIssues: option<array<missingIssue>>,
+  mutable maybeInvalidIssues: option<array<invalidIssue>>,
 }
 
 module Env = {
@@ -59,21 +60,17 @@ module Env = {
   default: Js.Dict.t<string> = "process.env"
 }
 
-// TODO: When can't coerce, default to json parsing
+let mixinMissingIssue = (envSafe, issue) => {
+  switch envSafe.maybeMissingIssues {
+  | Some(missingIssues) => missingIssues->Js.Array2.push(issue)->ignore
+  | None => envSafe.maybeMissingIssues = Some([issue])
+  }
+}
 
-let mixinIssue = (envSafe, issue) => {
-  switch issue.error {
-  | {code: InvalidType({received})}
-  | {code: InvalidLiteral({received})} if received === %raw(`undefined`) =>
-    switch envSafe.maybeMissingIssues {
-    | Some(missingIssues) => missingIssues->Js.Array2.push(issue)->ignore
-    | None => envSafe.maybeMissingIssues = Some([issue])
-    }
-  | _ =>
-    switch envSafe.maybeInvalidIssues {
-    | Some(invalidIssues) => invalidIssues->Js.Array2.push(issue)->ignore
-    | None => envSafe.maybeInvalidIssues = Some([issue])
-    }
+let mixinInvalidIssue = (envSafe, issue: invalidIssue) => {
+  switch envSafe.maybeInvalidIssues {
+  | Some(invalidIssues) => invalidIssues->Js.Array2.push(issue)->ignore
+  | None => envSafe.maybeInvalidIssues = Some([issue])
   }
 }
 
@@ -125,8 +122,36 @@ let close = envSafe => {
   }
 }
 
+let boolCoerce = string =>
+  switch string {
+  | "true"
+  | "t"
+  | "1" =>
+    true->magic
+  | "false"
+  | "f"
+  | "0" =>
+    false->magic
+  | _ => string
+  }
+
+let numberCoerce = string => {
+  let float = %raw(`+string`)
+  if Js.Float.isNaN(float) {
+    string
+  } else {
+    float->magic
+  }
+}
+
+let jsonCoerce = string => {
+  try string->Js.Json.parseExn->magic catch {
+  | _ => string
+  }
+}
+
 @inline
-let prepareSchema = (~schema, ~allowEmpty) => {
+let prepareUnionSchemaCoercion = schema => {
   schema->S.preprocess(s => {
     let tagged = switch s.schema->S.classify {
     | Option(optionalSchema) => optionalSchema->S.classify
@@ -135,58 +160,19 @@ let prepareSchema = (~schema, ~allowEmpty) => {
     switch tagged {
     | Literal(Boolean(_))
     | Bool => {
-        parser: unknown => {
-          switch unknown->magic {
-          | "true"
-          | "t"
-          | "1" => true
-          | "false"
-          | "f"
-          | "0" => false
-          | _ => unknown->magic
-          }->magic
-        },
+        parser: unknown => unknown->magic->boolCoerce->magic,
       }
-
     | Literal(Number(_))
     | Int
     | Float => {
-        parser: unknown => {
-          if unknown->Js.typeof === "string" {
-            let float = %raw(`+unknown`)
-            if Js.Float.isNaN(float) {
-              unknown
-            } else {
-              float
-            }
-          } else {
-            unknown
-          }
-        },
-      }
-    | String if allowEmpty === false => {
-        parser: unknown => {
-          switch unknown->magic {
-          | "" => Js.undefined->magic
-          | _ => unknown->magic
-          }
-        },
+        parser: unknown => unknown->magic->numberCoerce->magic,
       }
     | String
     | Literal(String(_))
-    | JSON
     | Union(_)
-    | Unknown
     | Never => {}
     | _ => {
-        parser: unknown => {
-          if unknown->Js.typeof === "string" {
-            let string = unknown->(magic: unknown => string)
-            string->Js.Json.parseExn->magic
-          } else {
-            unknown
-          }
-        },
+        parser: unknown => unknown->magic->jsonCoerce->magic,
       }
     }
   })
@@ -208,19 +194,61 @@ let get = (
   | Some(inlinedInput) => inlinedInput
   | None => envSafe.env->Stdlib.Dict.get(name)
   }
-  let parseResult = input->S.parseAnyWith(prepareSchema(~schema, ~allowEmpty))
-  switch (parseResult, maybeDevFallback, maybeFallback) {
-  | (Ok(v), _, _) => v
-  | (Error({code: InvalidLiteral({received})}), Some(devFallback), _)
-  | (Error({code: InvalidType({received})}), Some(devFallback), _)
-    if received === %raw(`undefined`) &&
-      envSafe.env->Stdlib.Dict.get("NODE_ENV") !== Some("production") => devFallback
-  | (Error({code: InvalidLiteral({received})}), _, Some(fallback))
-  | (Error({code: InvalidType({received})}), _, Some(fallback))
-    if received === %raw(`undefined`) => fallback
-  | (Error(error), _, _) => {
-      envSafe->mixinIssue({name, error, input})
-      %raw(`undefined`)
+  let isMissing = switch (input, allowEmpty) {
+  | (None, _)
+  | (Some(""), false) => true
+  | _ => false
+  }
+  let isOptional = switch schema->S.classify {
+  | Option(_) => true
+  | _ => false
+  }
+  if isMissing && !isOptional {
+    switch (maybeDevFallback, maybeFallback) {
+    | (Some(devFallback), _)
+      if envSafe.env->Stdlib.Dict.get("NODE_ENV") !== Some("production") => devFallback
+    | (_, Some(fallback)) => fallback
+    | _ => {
+        envSafe->mixinMissingIssue({name, input})
+        %raw(`undefined`)
+      }
+    }
+  } else {
+    let tagged = switch schema->S.classify {
+    | Option(optionalSchema) => optionalSchema->S.classify
+    | tagged => tagged
+    }
+    let input = switch input {
+    | Some("") if !allowEmpty => None
+    | None => None
+    | Some(string) =>
+      switch tagged {
+      | Literal(Boolean(_))
+      | Bool =>
+        string->boolCoerce
+      | Literal(Number(_))
+      | Int
+      | Float =>
+        string->numberCoerce
+      | String
+      | Literal(String(_))
+      | Never
+      | Union(_) => string
+      | _ => string->jsonCoerce
+      }->Some
+    }
+    let schema = switch tagged {
+    | Union(_) => prepareUnionSchemaCoercion(schema)
+    | _ => schema
+    }
+    let parseResult = input->S.parseAnyWith(schema)
+
+    switch parseResult {
+    | Ok(v) => v
+    | Error(error) => {
+        envSafe->mixinInvalidIssue({name, error, input})
+        %raw(`undefined`)
+      }
     }
   }
 }

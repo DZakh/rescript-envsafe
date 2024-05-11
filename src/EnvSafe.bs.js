@@ -11,29 +11,16 @@ function alert(message) {
   
 }
 
-function mixinIssue(envSafe, issue) {
-  var match = issue.error;
-  var match$1 = match.code;
-  var exit = 0;
-  if (typeof match$1 === "object") {
-    switch (match$1.TAG) {
-      case "InvalidType" :
-      case "InvalidLiteral" :
-          exit = 2;
-          break;
-      default:
-        
-    }
+function mixinMissingIssue(envSafe, issue) {
+  var missingIssues = envSafe.maybeMissingIssues;
+  if (missingIssues !== undefined) {
+    missingIssues.push(issue);
+  } else {
+    envSafe.maybeMissingIssues = [issue];
   }
-  if (exit === 2 && match$1.received === undefined) {
-    var missingIssues = envSafe.maybeMissingIssues;
-    if (missingIssues !== undefined) {
-      missingIssues.push(issue);
-    } else {
-      envSafe.maybeMissingIssues = [issue];
-    }
-    return ;
-  }
+}
+
+function mixinInvalidIssue(envSafe, issue) {
   var invalidIssues = envSafe.maybeInvalidIssues;
   if (invalidIssues !== undefined) {
     invalidIssues.push(issue);
@@ -92,151 +79,205 @@ function close(envSafe) {
   throw new TypeError(text);
 }
 
+function boolCoerce(string) {
+  switch (string) {
+    case "0" :
+    case "f" :
+    case "false" :
+        return false;
+    case "1" :
+    case "t" :
+    case "true" :
+        return true;
+    default:
+      return string;
+  }
+}
+
+function numberCoerce(string) {
+  var $$float = (+string);
+  if (Number.isNaN($$float)) {
+    return string;
+  } else {
+    return $$float;
+  }
+}
+
+function jsonCoerce(string) {
+  try {
+    return JSON.parse(string);
+  }
+  catch (exn){
+    return string;
+  }
+}
+
 function get(envSafe, name, schema, allowEmptyOpt, maybeFallback, maybeDevFallback, maybeInlinedInput) {
   var allowEmpty = allowEmptyOpt !== undefined ? allowEmptyOpt : false;
   if (envSafe.isLocked) {
     throw new Error("[rescript-envsafe] EnvSafe is closed. Make a new one to get access to environment variables.");
   }
   var input = maybeInlinedInput !== undefined ? Caml_option.valFromOption(maybeInlinedInput) : envSafe.env[name];
-  var parseResult = S$RescriptSchema.parseAnyWith(input, S$RescriptSchema.preprocess(schema, (function (s) {
-              var optionalSchema = S$RescriptSchema.classify(s.schema);
-              var tagged;
-              tagged = typeof optionalSchema !== "object" || optionalSchema.TAG !== "Option" ? optionalSchema : S$RescriptSchema.classify(optionalSchema._0);
-              var exit = 0;
-              if (typeof tagged !== "object") {
-                switch (tagged) {
-                  case "String" :
-                      if (allowEmpty === false) {
-                        return {
-                                p: (function (unknown) {
-                                    if (unknown === "") {
-                                      return ;
-                                    } else {
-                                      return unknown;
-                                    }
-                                  })
-                              };
-                      } else {
-                        return {};
-                      }
-                  case "Int" :
-                  case "Float" :
-                      exit = 3;
-                      break;
-                  case "Bool" :
-                      exit = 2;
-                      break;
-                  case "Never" :
-                  case "Unknown" :
-                  case "JSON" :
-                      return {};
-                  
-                }
+  var isMissing = input !== undefined && !(input === "" && !allowEmpty) ? false : true;
+  var match = S$RescriptSchema.classify(schema);
+  var isOptional;
+  isOptional = typeof match !== "object" || match.TAG !== "Option" ? false : true;
+  if (isMissing && !isOptional) {
+    if (maybeDevFallback !== undefined && envSafe.env["NODE_ENV"] !== "production") {
+      return Caml_option.valFromOption(maybeDevFallback);
+    }
+    if (maybeFallback !== undefined) {
+      return Caml_option.valFromOption(maybeFallback);
+    } else {
+      mixinMissingIssue(envSafe, {
+            name: name,
+            input: input
+          });
+      return undefined;
+    }
+  }
+  var optionalSchema = S$RescriptSchema.classify(schema);
+  var tagged;
+  tagged = typeof optionalSchema !== "object" || optionalSchema.TAG !== "Option" ? optionalSchema : S$RescriptSchema.classify(optionalSchema._0);
+  var input$1;
+  if (input !== undefined) {
+    var exit = 0;
+    if (input === "" && !allowEmpty) {
+      input$1 = undefined;
+    } else {
+      exit = 1;
+    }
+    if (exit === 1) {
+      var tmp;
+      if (typeof tagged !== "object") {
+        switch (tagged) {
+          case "Never" :
+          case "String" :
+              tmp = input;
+              break;
+          case "Int" :
+          case "Float" :
+              tmp = numberCoerce(input);
+              break;
+          case "Bool" :
+              tmp = boolCoerce(input);
+              break;
+          default:
+            tmp = jsonCoerce(input);
+        }
+      } else {
+        switch (tagged.TAG) {
+          case "Literal" :
+              var tmp$1 = tagged._0;
+              if (typeof tmp$1 !== "object") {
+                tmp = jsonCoerce(input);
               } else {
-                switch (tagged.TAG) {
-                  case "Literal" :
-                      var tmp = tagged._0;
-                      if (typeof tmp !== "object") {
-                        exit = 1;
-                      } else {
-                        switch (tmp.TAG) {
-                          case "String" :
-                              return {};
-                          case "Number" :
-                              exit = 3;
-                              break;
-                          case "Boolean" :
-                              exit = 2;
-                              break;
-                          default:
-                            exit = 1;
-                        }
-                      }
+                switch (tmp$1.TAG) {
+                  case "String" :
+                      tmp = input;
                       break;
-                  case "Union" :
-                      return {};
+                  case "Number" :
+                      tmp = numberCoerce(input);
+                      break;
+                  case "Boolean" :
+                      tmp = boolCoerce(input);
+                      break;
                   default:
-                    exit = 1;
+                    tmp = jsonCoerce(input);
                 }
               }
-              switch (exit) {
-                case 1 :
-                    return {
-                            p: (function (unknown) {
-                                if (typeof unknown === "string") {
-                                  return JSON.parse(unknown);
-                                } else {
-                                  return unknown;
-                                }
-                              })
-                          };
-                case 2 :
-                    return {
-                            p: (function (unknown) {
-                                switch (unknown) {
-                                  case "0" :
-                                  case "f" :
-                                  case "false" :
-                                      return false;
-                                  case "1" :
-                                  case "t" :
-                                  case "true" :
-                                      return true;
-                                  default:
-                                    return unknown;
-                                }
-                              })
-                          };
-                case 3 :
-                    return {
-                            p: (function (unknown) {
-                                if (typeof unknown !== "string") {
-                                  return unknown;
-                                }
-                                var $$float = (+unknown);
-                                if (Number.isNaN($$float)) {
-                                  return unknown;
-                                } else {
-                                  return $$float;
-                                }
-                              })
-                          };
-                
+              break;
+          case "Union" :
+              tmp = input;
+              break;
+          default:
+            tmp = jsonCoerce(input);
+        }
+      }
+      input$1 = tmp;
+    }
+    
+  } else {
+    input$1 = undefined;
+  }
+  var schema$1;
+  schema$1 = typeof tagged !== "object" || tagged.TAG !== "Union" ? schema : S$RescriptSchema.preprocess(schema, (function (s) {
+            var optionalSchema = S$RescriptSchema.classify(s.schema);
+            var tagged;
+            tagged = typeof optionalSchema !== "object" || optionalSchema.TAG !== "Option" ? optionalSchema : S$RescriptSchema.classify(optionalSchema._0);
+            var exit = 0;
+            if (typeof tagged !== "object") {
+              switch (tagged) {
+                case "Never" :
+                case "String" :
+                    return {};
+                case "Int" :
+                case "Float" :
+                    exit = 3;
+                    break;
+                case "Bool" :
+                    exit = 2;
+                    break;
+                default:
+                  exit = 1;
               }
-            })));
-  var exit = 0;
+            } else {
+              switch (tagged.TAG) {
+                case "Literal" :
+                    var tmp = tagged._0;
+                    if (typeof tmp !== "object") {
+                      exit = 1;
+                    } else {
+                      switch (tmp.TAG) {
+                        case "String" :
+                            return {};
+                        case "Number" :
+                            exit = 3;
+                            break;
+                        case "Boolean" :
+                            exit = 2;
+                            break;
+                        default:
+                          exit = 1;
+                      }
+                    }
+                    break;
+                case "Union" :
+                    return {};
+                default:
+                  exit = 1;
+              }
+            }
+            switch (exit) {
+              case 1 :
+                  return {
+                          p: (function (unknown) {
+                              return jsonCoerce(unknown);
+                            })
+                        };
+              case 2 :
+                  return {
+                          p: (function (unknown) {
+                              return boolCoerce(unknown);
+                            })
+                        };
+              case 3 :
+                  return {
+                          p: (function (unknown) {
+                              return numberCoerce(unknown);
+                            })
+                        };
+              
+            }
+          }));
+  var parseResult = S$RescriptSchema.parseAnyWith(input$1, schema$1);
   if (parseResult.TAG === "Ok") {
     return parseResult._0;
   }
-  var match = parseResult._0.code;
-  var exit$1 = 0;
-  if (typeof match === "object") {
-    switch (match.TAG) {
-      case "InvalidType" :
-      case "InvalidLiteral" :
-          exit$1 = 3;
-          break;
-      default:
-        
-    }
-  }
-  if (exit$1 === 3) {
-    if (maybeDevFallback !== undefined) {
-      if (match.received === undefined && envSafe.env["NODE_ENV"] !== "production") {
-        return Caml_option.valFromOption(maybeDevFallback);
-      }
-      exit = 2;
-    } else {
-      exit = 2;
-    }
-  }
-  if (exit === 2 && maybeFallback !== undefined && parseResult._0.code.received === undefined) {
-    return Caml_option.valFromOption(maybeFallback);
-  }
-  mixinIssue(envSafe, {
+  mixinInvalidIssue(envSafe, {
         name: name,
         error: parseResult._0,
-        input: input
+        input: input$1
       });
   return undefined;
 }

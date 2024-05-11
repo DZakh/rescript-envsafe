@@ -89,21 +89,28 @@ test("Successfully get String value when env is an empty string and allowEmpty i
   }, ())
 })
 
-test(
-  `Successfully get String Literal ("") value when env is an empty string and allowEmpty is false`,
-  t => {
-    let envSafe = EnvSafe.make(
-      ~env=Obj.magic({
-        "STRING_ENV": "",
-      }),
-    )
+test(`Fails to get String Literal ("") value when env is an empty string`, t => {
+  let envSafe = EnvSafe.make(
+    ~env=Obj.magic({
+      "STRING_ENV": "",
+    }),
+  )
 
-    t->Assert.is(envSafe->EnvSafe.get("STRING_ENV", S.literal(""), ~allowEmpty=false), "", ())
-    t->Assert.notThrows(() => {
+  t->Assert.is(envSafe->EnvSafe.get("STRING_ENV", S.literal("")), %raw(`undefined`), ())
+  t->Assert.throws(
+    () => {
       envSafe->EnvSafe.close
-    }, ())
-  },
-)
+    },
+    ~expectations={
+      name: "TypeError",
+      message: `========================================
+💨 Missing environment variables:
+    STRING_ENV: Disallowed empty string
+========================================`,
+    },
+    (),
+  )
+})
 
 test("Fails to get value when env is missing", t => {
   let envSafe = EnvSafe.make(
