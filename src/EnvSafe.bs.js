@@ -168,23 +168,18 @@ function get(envSafe, name, schema, allowEmptyOpt, maybeFallback, maybeDevFallba
       } else {
         switch (tagged.TAG) {
           case "Literal" :
-              var tmp$1 = tagged._0;
-              if (typeof tmp$1 !== "object") {
-                tmp = jsonCoerce(input);
-              } else {
-                switch (tmp$1.TAG) {
-                  case "String" :
-                      tmp = input;
-                      break;
-                  case "Number" :
-                      tmp = numberCoerce(input);
-                      break;
-                  case "Boolean" :
-                      tmp = boolCoerce(input);
-                      break;
-                  default:
-                    tmp = jsonCoerce(input);
-                }
+              switch (tagged._0.kind) {
+                case "String" :
+                    tmp = input;
+                    break;
+                case "Number" :
+                    tmp = numberCoerce(input);
+                    break;
+                case "Boolean" :
+                    tmp = boolCoerce(input);
+                    break;
+                default:
+                  tmp = jsonCoerce(input);
               }
               break;
           case "Union" :
@@ -224,22 +219,17 @@ function get(envSafe, name, schema, allowEmptyOpt, maybeFallback, maybeDevFallba
             } else {
               switch (tagged.TAG) {
                 case "Literal" :
-                    var tmp = tagged._0;
-                    if (typeof tmp !== "object") {
-                      exit = 1;
-                    } else {
-                      switch (tmp.TAG) {
-                        case "String" :
-                            return {};
-                        case "Number" :
-                            exit = 3;
-                            break;
-                        case "Boolean" :
-                            exit = 2;
-                            break;
-                        default:
-                          exit = 1;
-                      }
+                    switch (tagged._0.kind) {
+                      case "String" :
+                          return {};
+                      case "Number" :
+                          exit = 3;
+                          break;
+                      case "Boolean" :
+                          exit = 2;
+                          break;
+                      default:
+                        exit = 1;
                     }
                     break;
                 case "Union" :

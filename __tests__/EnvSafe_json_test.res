@@ -46,7 +46,7 @@ test(`Uses JSON parsing with JSON schema`, t => {
     }),
   )
 
-  t->Assert.deepEqual(envSafe->EnvSafe.get("ENV", S.json), [1, 2]->Obj.magic)
+  t->Assert.deepEqual(envSafe->EnvSafe.get("ENV", S.json(~validate=true)), [1, 2]->Obj.magic)
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
   })

@@ -19,11 +19,11 @@ test(`Works with Example code`, t => {
     ),
     #development,
   )
-  t->Assert.is(envSafe->EnvSafe.get("PORT", S.int->S.Int.port, ~devFallback=3000), 80)
+  t->Assert.is(envSafe->EnvSafe.get("PORT", S.int->S.port, ~devFallback=3000), 80)
   t->Assert.is(
     envSafe->EnvSafe.get(
       "API_URL",
-      S.string->S.String.url,
+      S.string->S.url,
       ~devFallback="https://example.com/graphql",
     ),
     "https://example.com/foo",
