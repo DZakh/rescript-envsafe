@@ -52,7 +52,7 @@ test(`Uses JSON parsing with JSON schema`, t => {
   })
 })
 
-test(`Doens't use JSON parsing with never schema`, t => {
+test(`Doesn't use JSON parsing with never schema`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "ENV": `[1, 2]`,
@@ -67,7 +67,7 @@ test(`Doens't use JSON parsing with never schema`, t => {
     ~expectations={
       message: `========================================
 ❌ Invalid environment variables:
-    ENV: Failed parsing at root. Reason: Expected Never, received "[1, 2]"
+    ENV: Failed parsing at root. Reason: Expected never, received "[1, 2]"
 ========================================`,
     },
   )
@@ -88,7 +88,7 @@ test(`Fails with invalid json string`, t => {
     ~expectations={
       message: `========================================
 ❌ Invalid environment variables:
-    ENV: Failed parsing at root. Reason: Expected Array(Int), received "[1, 2],"
+    ENV: Failed parsing at root. Reason: Expected array<int32>, received "[1, 2],"
 ========================================`,
     },
   )

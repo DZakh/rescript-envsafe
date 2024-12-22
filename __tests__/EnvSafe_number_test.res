@@ -52,6 +52,32 @@ test(`Successfully get Literal Float value when the env is "1"`, t => {
   })
 })
 
+test(`Successfully get Literal BigInt value when the env is "1"`, t => {
+  let envSafe = EnvSafe.make(
+    ~env=Obj.magic({
+      "INT_ENV": "1",
+    }),
+  )
+
+  t->Assert.is(envSafe->EnvSafe.get("INT_ENV", S.literal(1n)), 1n)
+  t->Assert.notThrows(() => {
+    envSafe->EnvSafe.close
+  })
+})
+
+test(`Successfully get BigInt value when the env is "1"`, t => {
+  let envSafe = EnvSafe.make(
+    ~env=Obj.magic({
+      "INT_ENV": "1",
+    }),
+  )
+
+  t->Assert.is(envSafe->EnvSafe.get("INT_ENV", S.bigint), 1n)
+  t->Assert.notThrows(() => {
+    envSafe->EnvSafe.close
+  })
+})
+
 test(`Fails to get invalid number`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
@@ -68,7 +94,7 @@ test(`Fails to get invalid number`, t => {
       name: "TypeError",
       message: `========================================
 ❌ Invalid environment variables:
-    INT_ENV: Failed parsing at root. Reason: Expected Int, received "1_000"
+    INT_ENV: Failed parsing at root. Reason: Expected int32, received "1_000"
 ========================================`,
     },
   )

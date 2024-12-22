@@ -172,7 +172,7 @@ test(`Fails to get Bool value when the env is "2"`, t => {
       name: "TypeError",
       message: `========================================
 ❌ Invalid environment variables:
-    BOOL_ENV: Failed parsing at root. Reason: Expected Bool, received "2"
+    BOOL_ENV: Failed parsing at root. Reason: Expected boolean, received "2"
 ========================================`,
     },
   )

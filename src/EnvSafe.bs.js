@@ -3,6 +3,7 @@
 
 var Caml_option = require("rescript/lib/js/caml_option.js");
 var S$RescriptSchema = require("rescript-schema/src/S.bs.js");
+var Caml_js_exceptions = require("rescript/lib/js/caml_js_exceptions.js");
 
 function alert(message) {
   if ((typeof window !== 'undefined' && window.alert)) {
@@ -103,6 +104,15 @@ function numberCoerce(string) {
   }
 }
 
+function bigintCoerce(string) {
+  try {
+    return BigInt(string);
+  }
+  catch (exn){
+    return string;
+  }
+}
+
 function jsonCoerce(string) {
   try {
     return JSON.parse(string);
@@ -119,9 +129,9 @@ function get(envSafe, name, schema, allowEmptyOpt, maybeFallback, maybeDevFallba
   }
   var input = maybeInlinedInput !== undefined ? Caml_option.valFromOption(maybeInlinedInput) : envSafe.env[name];
   var isMissing = input !== undefined && !(input === "" && !allowEmpty) ? false : true;
-  var match = S$RescriptSchema.classify(schema);
+  var match = schema.t;
   var isOptional;
-  isOptional = typeof match !== "object" || match.TAG !== "Option" ? false : true;
+  isOptional = typeof match !== "object" || match.TAG !== "option" ? false : true;
   if (isMissing && !isOptional) {
     if (maybeDevFallback !== undefined && envSafe.env["NODE_ENV"] !== "production") {
       return Caml_option.valFromOption(maybeDevFallback);
@@ -136,9 +146,9 @@ function get(envSafe, name, schema, allowEmptyOpt, maybeFallback, maybeDevFallba
       return undefined;
     }
   }
-  var optionalSchema = S$RescriptSchema.classify(schema);
+  var optionalSchema = schema.t;
   var tagged;
-  tagged = typeof optionalSchema !== "object" || optionalSchema.TAG !== "Option" ? optionalSchema : S$RescriptSchema.classify(optionalSchema._0);
+  tagged = typeof optionalSchema !== "object" || optionalSchema.TAG !== "option" ? optionalSchema : optionalSchema._0.t;
   var input$1;
   if (input !== undefined) {
     var exit = 0;
@@ -151,15 +161,18 @@ function get(envSafe, name, schema, allowEmptyOpt, maybeFallback, maybeDevFallba
       var tmp;
       if (typeof tagged !== "object") {
         switch (tagged) {
-          case "Never" :
-          case "String" :
+          case "never" :
+          case "string" :
               tmp = input;
               break;
-          case "Int" :
-          case "Float" :
+          case "int32" :
+          case "number" :
               tmp = numberCoerce(input);
               break;
-          case "Bool" :
+          case "bigint" :
+              tmp = bigintCoerce(input);
+              break;
+          case "boolean" :
               tmp = boolCoerce(input);
               break;
           default:
@@ -167,7 +180,7 @@ function get(envSafe, name, schema, allowEmptyOpt, maybeFallback, maybeDevFallba
         }
       } else {
         switch (tagged.TAG) {
-          case "Literal" :
+          case "literal" :
               switch (tagged._0.kind) {
                 case "String" :
                     tmp = input;
@@ -178,11 +191,14 @@ function get(envSafe, name, schema, allowEmptyOpt, maybeFallback, maybeDevFallba
                 case "Boolean" :
                     tmp = boolCoerce(input);
                     break;
+                case "BigInt" :
+                    tmp = bigintCoerce(input);
+                    break;
                 default:
                   tmp = jsonCoerce(input);
               }
               break;
-          case "Union" :
+          case "union" :
               tmp = input;
               break;
           default:
@@ -196,21 +212,24 @@ function get(envSafe, name, schema, allowEmptyOpt, maybeFallback, maybeDevFallba
     input$1 = undefined;
   }
   var schema$1;
-  schema$1 = typeof tagged !== "object" || tagged.TAG !== "Union" ? schema : S$RescriptSchema.preprocess(schema, (function (s) {
-            var optionalSchema = S$RescriptSchema.classify(s.schema);
+  schema$1 = typeof tagged !== "object" || tagged.TAG !== "union" ? schema : S$RescriptSchema.preprocess(schema, (function (s) {
+            var optionalSchema = s.schema.t;
             var tagged;
-            tagged = typeof optionalSchema !== "object" || optionalSchema.TAG !== "Option" ? optionalSchema : S$RescriptSchema.classify(optionalSchema._0);
+            tagged = typeof optionalSchema !== "object" || optionalSchema.TAG !== "option" ? optionalSchema : optionalSchema._0.t;
             var exit = 0;
             if (typeof tagged !== "object") {
               switch (tagged) {
-                case "Never" :
-                case "String" :
+                case "never" :
+                case "string" :
                     return {};
-                case "Int" :
-                case "Float" :
+                case "int32" :
+                case "number" :
+                    exit = 4;
+                    break;
+                case "bigint" :
                     exit = 3;
                     break;
-                case "Bool" :
+                case "boolean" :
                     exit = 2;
                     break;
                 default:
@@ -218,21 +237,24 @@ function get(envSafe, name, schema, allowEmptyOpt, maybeFallback, maybeDevFallba
               }
             } else {
               switch (tagged.TAG) {
-                case "Literal" :
+                case "literal" :
                     switch (tagged._0.kind) {
                       case "String" :
                           return {};
                       case "Number" :
-                          exit = 3;
+                          exit = 4;
                           break;
                       case "Boolean" :
                           exit = 2;
+                          break;
+                      case "BigInt" :
+                          exit = 3;
                           break;
                       default:
                         exit = 1;
                     }
                     break;
-                case "Union" :
+                case "union" :
                     return {};
                 default:
                   exit = 1;
@@ -254,22 +276,33 @@ function get(envSafe, name, schema, allowEmptyOpt, maybeFallback, maybeDevFallba
               case 3 :
                   return {
                           p: (function (unknown) {
+                              return bigintCoerce(unknown);
+                            })
+                        };
+              case 4 :
+                  return {
+                          p: (function (unknown) {
                               return numberCoerce(unknown);
                             })
                         };
               
             }
           }));
-  var parseResult = S$RescriptSchema.parseAnyWith(input$1, schema$1);
-  if (parseResult.TAG === "Ok") {
-    return parseResult._0;
+  try {
+    return S$RescriptSchema.parseOrThrow(input$1, schema$1);
   }
-  mixinInvalidIssue(envSafe, {
-        name: name,
-        error: parseResult._0,
-        input: input$1
-      });
-  return undefined;
+  catch (raw_error){
+    var error = Caml_js_exceptions.internalToOCamlException(raw_error);
+    if (error.RE_EXN_ID === S$RescriptSchema.Raised) {
+      mixinInvalidIssue(envSafe, {
+            name: name,
+            error: error._1,
+            input: input$1
+          });
+      return undefined;
+    }
+    throw error;
+  }
 }
 
 exports.make = make;

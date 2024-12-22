@@ -144,6 +144,12 @@ let numberCoerce = string => {
   }
 }
 
+let bigintCoerce = string => {
+  try string->Js.BigInt.fromStringExn->magic catch {
+  | _ => string
+  }
+}
+
 let jsonCoerce = string => {
   try string->Js.Json.parseExn->magic catch {
   | _ => string
@@ -161,6 +167,10 @@ let prepareUnionSchemaCoercion = schema => {
     | Literal(Boolean(_))
     | Bool => {
         parser: unknown => unknown->magic->boolCoerce->magic,
+      }
+    | Literal(BigInt(_))
+    | BigInt => {
+        parser: unknown => unknown->magic->bigintCoerce->magic,
       }
     | Literal(Number(_))
     | Int
@@ -226,6 +236,9 @@ let get = (
       | Literal(Boolean(_))
       | Bool =>
         string->boolCoerce
+      | Literal(BigInt(_))
+      | BigInt =>
+        string->bigintCoerce
       | Literal(Number(_))
       | Int
       | Float =>
@@ -241,11 +254,8 @@ let get = (
     | Union(_) => prepareUnionSchemaCoercion(schema)
     | _ => schema
     }
-    let parseResult = input->S.parseAnyWith(schema)
-
-    switch parseResult {
-    | Ok(v) => v
-    | Error(error) => {
+    try input->S.parseOrThrow(schema) catch {
+    | S.Raised(error) => {
         envSafe->mixinInvalidIssue({name, error, input})
         %raw(`undefined`)
       }
