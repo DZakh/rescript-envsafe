@@ -21,11 +21,7 @@ test(`Works with Example code`, t => {
   )
   t->Assert.is(envSafe->EnvSafe.get("PORT", S.int->S.port, ~devFallback=3000), 80)
   t->Assert.is(
-    envSafe->EnvSafe.get(
-      "API_URL",
-      S.string->S.url,
-      ~devFallback="https://example.com/graphql",
-    ),
+    envSafe->EnvSafe.get("API_URL", S.string->S.url, ~devFallback="https://example.com/graphql"),
     "https://example.com/foo",
   )
   t->Assert.is(envSafe->EnvSafe.get("AUTH0_CLIENT_ID", S.string), "xxxxx")

@@ -4,7 +4,7 @@
 
 module Stdlib = {
   module Dict = {
-    @get_index external get: (Js.Dict.t<'a>, string) => option<'a> = ""
+    @get_index external get: (dict<'a>, string) => option<'a> = ""
   }
 
   module Option = {
@@ -34,7 +34,7 @@ module Stdlib = {
     @new
     external makeTypeError: string => error = "TypeError"
 
-    let raiseError = (error: error): 'a => error->magic->raise
+    let raiseError = (error: error): 'a => error->magic->throw
   }
 }
 
@@ -44,7 +44,7 @@ module Error = {
     Stdlib.Exn.raiseError(Stdlib.Exn.makeError(`[rescript-envsafe] ${message}`))
 }
 
-type env = Js.Dict.t<string>
+type env = dict<string>
 type invalidIssue = {name: string, error: S.error, input: option<string>}
 type missingIssue = {name: string, input: option<string>}
 type t = {
@@ -57,19 +57,19 @@ type t = {
 module Env = {
   @val
   external // FIXME: process might be missing
-  default: Js.Dict.t<string> = "process.env"
+  default: dict<string> = "process.env"
 }
 
 let mixinMissingIssue = (envSafe, issue) => {
   switch envSafe.maybeMissingIssues {
-  | Some(missingIssues) => missingIssues->Js.Array2.push(issue)->ignore
+  | Some(missingIssues) => missingIssues->Array.push(issue)->ignore
   | None => envSafe.maybeMissingIssues = Some([issue])
   }
 }
 
 let mixinInvalidIssue = (envSafe, issue: invalidIssue) => {
   switch envSafe.maybeInvalidIssues {
-  | Some(invalidIssues) => invalidIssues->Js.Array2.push(issue)->ignore
+  | Some(invalidIssues) => invalidIssues->Array.push(issue)->ignore
   | None => envSafe.maybeInvalidIssues = Some([issue])
   }
 }
@@ -91,17 +91,17 @@ let close = envSafe => {
         let output = [line]
 
         maybeInvalidIssues->Stdlib.Option.forEach(invalidIssues => {
-          output->Js.Array2.push("❌ Invalid environment variables:")->ignore
-          invalidIssues->Js.Array2.forEach(issue => {
-            output->Js.Array2.push(`    ${issue.name}: ${issue.error->S.Error.message}`)->ignore
+          output->Array.push("❌ Invalid environment variables:")->ignore
+          invalidIssues->Array.forEach(issue => {
+            output->Array.push(`    ${issue.name}: ${issue.error->S.Error.message}`)->ignore
           })
         })
 
         maybeMissingIssues->Stdlib.Option.forEach(missingIssues => {
-          output->Js.Array2.push("💨 Missing environment variables:")->ignore
-          missingIssues->Js.Array2.forEach(issue => {
+          output->Array.push("💨 Missing environment variables:")->ignore
+          missingIssues->Array.forEach(issue => {
             output
-            ->Js.Array2.push(
+            ->Array.push(
               `    ${issue.name}: ${switch issue.input {
                 | Some("") => "Disallowed empty string"
                 | _ => "Missing value"
@@ -111,11 +111,11 @@ let close = envSafe => {
           })
         })
 
-        output->Js.Array2.push(line)->ignore
-        output->Js.Array2.joinWith("\n")
+        output->Array.push(line)->ignore
+        output->Array.joinUnsafe("\n")
       }
 
-      Js.Console.error(text)
+      Console.error(text)
       Stdlib.Window.alert(text)
       Stdlib.Exn.raiseError(Stdlib.Exn.makeTypeError(text))
     }
@@ -137,7 +137,7 @@ let boolCoerce = string =>
 
 let numberCoerce = string => {
   let float = %raw(`+string`)
-  if Js.Float.isNaN(float) {
+  if Float.isNaN(float) {
     string
   } else {
     float->magic
@@ -145,13 +145,13 @@ let numberCoerce = string => {
 }
 
 let bigintCoerce = string => {
-  try string->Js.BigInt.fromStringExn->magic catch {
+  try string->BigInt.fromStringOrThrow->magic catch {
   | _ => string
   }
 }
 
 let jsonCoerce = string => {
-  try string->Js.Json.parseExn->magic catch {
+  try string->JSON.parseOrThrow->magic catch {
   | _ => string
   }
 }
