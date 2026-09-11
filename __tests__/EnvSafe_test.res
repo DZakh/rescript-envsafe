@@ -140,7 +140,7 @@ test("Uses devFallback value when env is missing", t => {
   t->Assert.is(
     envSafe->EnvSafe.get(
       "MISSING_ENV",
-      S.literal("invalid")->S.to(_ => #polymorphicToTestFunctionType2),
+      S.literal("invalid")->S.shape(_ => #polymorphicToTestFunctionType2),
       ~devFallback=#polymorphicToTestFunctionType,
     ),
     #polymorphicToTestFunctionType,
@@ -160,7 +160,7 @@ test("Uses fallback value when env is missing", t => {
   t->Assert.is(
     envSafe->EnvSafe.get(
       "MISSING_ENV",
-      S.literal("invalid")->S.to(_ => #polymorphicToTestFunctionType2),
+      S.literal("invalid")->S.shape(_ => #polymorphicToTestFunctionType2),
       ~fallback=#polymorphicToTestFunctionType,
     ),
     #polymorphicToTestFunctionType,
@@ -226,7 +226,7 @@ test("Doesn't use devFallback value when NODE_ENV is production", t => {
   t->Assert.is(
     envSafe->EnvSafe.get(
       "MISSING_ENV",
-      S.literal("invalid")->S.to(_ => #polymorphicToTestFunctionType2),
+      S.literal("invalid")->S.shape(_ => #polymorphicToTestFunctionType2),
       ~devFallback=#polymorphicToTestFunctionType,
     ),
     %raw(`undefined`),
@@ -343,12 +343,12 @@ test(`Doesn't show input value when it's missing for invalid env`, t => {
 
 test("Applies preprocessor logic for union schemas separately", t => {
   let schema = S.union([
-    S.bool->S.to(bool => #Bool(bool)),
-    S.string->S.to(string => #String(string)),
-    S.union([S.int->S.to(int => #Int(int)), S.string->S.to(string => #String(string))]),
+    S.bool->S.shape(bool => #Bool(bool)),
+    S.string->S.shape(string => #String(string)),
+    S.union([S.int->S.shape(int => #Int(int)), S.string->S.shape(string => #String(string))]),
   ])
 
-  let envSafe = EnvSafe.make(~env=Obj.magic(Js.Dict.empty()))
+  let envSafe = EnvSafe.make(~env=Obj.magic(Dict.make()))
 
   t->Assert.deepEqual(
     envSafe->EnvSafe.get("STRING_VALID_ENV", schema, ~input=Some("foo")),

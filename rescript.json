@@ -1,12 +1,12 @@
 {
   "name": "rescript-envsafe",
   "namespace": false,
-  "bs-dev-dependencies": ["@dzakh/rescript-ava"],
-  "bs-dependencies": ["rescript-schema"],
-  "bsc-flags": ["-open RescriptSchema"],
-  "suffix": ".bs.js",
+  "dev-dependencies": ["@dzakh/rescript-ava"],
+  "dependencies": ["rescript-schema"],
+  "compiler-flags": ["-open RescriptSchema"],
+  "suffix": ".res.mjs",
   "package-specs": {
-    "module": "commonjs",
+    "module": "esmodule",
     "in-source": true
   },
   "sources": [

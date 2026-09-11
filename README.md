@@ -49,13 +49,13 @@ envSafe->EnvSafe.close
 npm install rescript-envsafe rescript-schema
 ```
 
-Then add `rescript-envsafe` and `rescript-schema` to `bs-dependencies` in your `rescript.json`:
+Then add `rescript-envsafe` and `rescript-schema` to `dependencies` in your `rescript.json`:
 
 ```diff
 {
   ...
-+ "bs-dependencies": ["rescript-envsafe", "rescript-schema"],
-+ "bsc-flags": ["-open RescriptSchema"],
++ "dependencies": ["rescript-envsafe", "rescript-schema"],
++ "compiler-flags": ["-open RescriptSchema"],
 }
 ```
 
