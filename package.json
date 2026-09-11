@@ -34,7 +34,7 @@
   },
   "ava": {
     "files": [
-      "__tests__/**/*_test.bs.js"
+      "__tests__/**/*_test.res.mjs"
     ]
   },
   "devDependencies": {
