@@ -122,91 +122,74 @@ let close = envSafe => {
   }
 }
 
-let boolCoerce = string =>
-  switch string {
-  | "true"
-  | "t"
-  | "1" =>
-    true->magic
-  | "false"
-  | "f"
-  | "0" =>
-    false->magic
-  | _ => string
-  }
+// Sury's `S.string->S.to(S.boolean)` reads "true"/"false"; envsafe also reads
+// "t"/"f"/"1"/"0", so those are normalized into the two the conversion knows.
+// Normalizing the string rather than producing the bool keeps the target doing
+// the validating: a custom coder's result is the target's *output*, so nothing
+// would reject "2".
+let boolString = S.string->S.to(
+  S.string,
+  ~custom={
+    decode: Sync(
+      string =>
+        switch string {
+        | "true" | "t" | "1" => "true"
+        | "false" | "f" | "0" => "false"
+        | string => string
+        },
+    ),
+    encode: Auto,
+  },
+)
 
-let numberCoerce = string => {
-  let float = %raw(`+string`)
-  if Float.isNaN(float) {
-    string
-  } else {
-    float->magic
-  }
-}
-
-let bigintCoerce = string => {
-  try string->BigInt.fromStringOrThrow->magic catch {
-  | _ => string
-  }
-}
-
-let jsonCoerce = string => {
-  try string->JSON.parseOrThrow->magic catch {
-  | _ => string
-  }
-}
-
-// Sury flattens nested unions and spells `S.option(X)` as an `X | undefined`
-// union, so the `undefined` member comes off before asking what a raw string
-// should coerce to. One member left means the schema reads as that type; more
-// than one is a real union, where every member coerces on its own.
-let coercionTarget = (schema: S.t<'value>): option<S.t<unknown>> =>
+// Sury's built-in `S.string->S.to` coercion covers every leaf: literals,
+// numbers, bigints and a string passing through. Two kinds need a word:
+//
+// - bool, whose extra tokens are normalized into the two the conversion reads.
+// - anything JSON-shaped, where the string is a document rather than a value
+//   the built-in conversion could reach. `S.jsonString` is that reading.
+//
+// The reading has to be picked by shape, not by trying one and catching: `S.to`
+// builds lazily, so an unreachable conversion only fails when a value arrives.
+let coerceLeaf = (schema: S.t<'value>): S.t<'value> =>
   switch schema {
-  | S.AnyOf({anyOf}) =>
-    switch anyOf->Array.filter(member =>
-      switch member {
-      | S.Undefined(_) => false
-      | _ => true
-      }
-    ) {
-    | [member] => Some(member)
-    | _ => None
-    }
-  | leaf => Some(leaf->S.castToUnknown)
-  }
-
-let coerceString = (string, schema) =>
-  switch schema {
-  | S.Boolean(_) => string->boolCoerce
-  | S.BigInt(_) => string->bigintCoerce
-  | S.Number(_) => string->numberCoerce
+  | S.Boolean(_) => boolString->S.to(schema)
   | S.String(_)
-  | S.Never(_) => string
-  | _ => string->jsonCoerce
+  | S.Number(_)
+  | S.BigInt(_)
+  | S.Never(_) =>
+    S.string->S.to(schema)
+  | _ => S.jsonString->S.to(schema)
   }
 
 // A union carrying its own refinement or conversion is a normal schema rather
 // than a union (Sury's CODEC_SPEC.md), and rebuilding it from `anyOf` would
-// drop what it carries - so leave those alone and pass the string through.
-// `decoder`/`encoder` are the compiled dispatch every union has, not own logic.
-// `refiner` has no field on `S.untagged`, hence the raw read.
+// drop what it carries. `decoder`/`encoder` are the compiled dispatch every
+// union has, not own logic; `refiner` has no field on `S.untagged`.
 let carriesOwnLogic = (schema: S.t<'value>) =>
   %raw(`s => s.refiner !== undefined`)(schema) || (schema->S.untag).to->Option.isSome
 
-// `S.to` replaces the preprocessor rescript-schema distributed over a union's
-// members: each member decodes the raw string the way its own type wants.
-let coerceUnion = (schema: S.t<'value>): S.t<'value> =>
+// Sury flattens nested unions and spells `S.option(X)` as an `X | undefined`
+// union. A string never arrives for the `undefined` member, so it passes
+// through; the rest coerce on their own, which is what the preprocessor
+// rescript-schema distributed over a union's members used to do. Wrapping each
+// member is also Sury's own remedy for the ambiguity a bare
+// `string -> boolean | string` is rejected with.
+let coerceSchema = (schema: S.t<'value>): S.t<'value> =>
   switch schema {
   | S.AnyOf({anyOf}) if !(schema->carriesOwnLogic) =>
     S.union(
       anyOf->Array.map(member =>
-        S.any->S.to(
-          member,
-          ~custom={decode: Sync(input => input->magic->coerceString(member)->magic), encode: Never},
-        )
+        switch member {
+        | S.Undefined(_) => member
+        | _ => member->coerceLeaf
+        }
       ),
     )->magic
-  | _ => schema
+  // A union carrying its own logic is left alone: there is no single member to
+  // read the string as, and the JSON reading below would be wrong for it.
+  | S.AnyOf(_) => schema
+  | _ => schema->coerceLeaf
   }
 
 let get = (
@@ -245,21 +228,11 @@ let get = (
       }
     }
   } else {
-    let target = schema->coercionTarget
     let input = switch input {
     | Some("") if !allowEmpty => None
-    | None => None
-    | Some(string) =>
-      switch target {
-      | Some(member) => string->coerceString(member)
-      | None => string
-      }->Some
+    | input => input
     }
-    let schema = switch target {
-    | Some(_) => schema
-    | None => schema->coerceUnion
-    }
-    try input->S.parseOrThrow(~to=schema) catch {
+    try input->S.parseOrThrow(~to=schema->coerceSchema) catch {
     | S.Exn(error) => {
         envSafe->mixinInvalidIssue({name, error, input})
         %raw(`undefined`)

@@ -88,7 +88,7 @@ test(`Fails with invalid json string`, t => {
     ~expectations={
       message: `========================================
 ❌ Invalid environment variables:
-    ENV: Expected int32[], received "[1, 2],"
+    ENV: Expected JSON string, received "[1, 2],"
 ========================================`,
     },
   )

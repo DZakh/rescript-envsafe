@@ -306,7 +306,7 @@ test("Closes with 1 valid, 3 missing and 2 invalid environment variables", t => 
       message: `========================================
 ❌ Invalid environment variables:
     BOOL_ENV1: Expected int32, received "true"
-    BOOL_ENV2: Expected true, received false
+    BOOL_ENV2: Expected "true", received "false"
 💨 Missing environment variables:
     MISSING_ENV1: Missing value
     MISSING_ENV2: Missing value

@@ -76,55 +76,38 @@ function close(envSafe) {
   throw new TypeError(text);
 }
 
-function coercionTarget(schema) {
-  if (schema.type !== "anyOf") {
-    return schema;
-  }
-  let match = schema.anyOf.filter(member => member.type !== "undefined");
-  if (match.length !== 1) {
-    return;
-  } else {
-    return match[0];
-  }
-}
-
-function coerceString(string, schema) {
-  switch (schema.type) {
-    case "never" :
-    case "string" :
-      return string;
-    case "number" :
-      let float = (+string);
-      if (Number.isNaN(float)) {
-        return string;
-      } else {
-        return float;
-      }
-    case "bigint" :
-      try {
-        return BigInt(string);
-      } catch (exn) {
-        return string;
-      }
-    case "boolean" :
+let boolString = S.to(Sury.string, Sury.string, {
+  decode: {
+    TAG: "Sync",
+    _0: string => {
       switch (string) {
         case "0" :
         case "f" :
         case "false" :
-          return false;
+          return "false";
         case "1" :
         case "t" :
         case "true" :
-          return true;
+          return "true";
         default:
           return string;
       }
+    }
+  },
+  encode: "auto"
+});
+
+function coerceLeaf(schema) {
+  switch (schema.type) {
+    case "never" :
+    case "string" :
+    case "number" :
+    case "bigint" :
+      return S.to(Sury.string, schema, undefined);
+    case "boolean" :
+      return S.to(boolString, schema, undefined);
     default:
-      try {
-        return JSON.parse(string);
-      } catch (exn$1) {
-        return string;
-      }
+      return S.to(Sury.jsonString, schema, undefined);
   }
 }
 
@@ -136,17 +119,21 @@ function carriesOwnLogic(schema) {
   }
 }
 
-function coerceUnion(schema) {
-  if (schema.type === "anyOf" && !carriesOwnLogic(schema)) {
-    return Sury.union(schema.anyOf.map(member => S.to(Sury.any, member, {
-      decode: {
-        TAG: "Sync",
-        _0: input => coerceString(input, member)
-      },
-      encode: "never"
-    })));
+function coerceSchema(schema) {
+  if (schema.type === "anyOf") {
+    if (carriesOwnLogic(schema)) {
+      return schema;
+    } else {
+      return Sury.union(schema.anyOf.map(member => {
+        if (member.type === "undefined") {
+          return member;
+        } else {
+          return coerceLeaf(member);
+        }
+      }));
+    }
   } else {
-    return schema;
+    return coerceLeaf(schema);
   }
 }
 
@@ -180,24 +167,9 @@ function get(envSafe, name, schema, allowEmptyOpt, maybeFallback, maybeDevFallba
       return undefined;
     }
   }
-  let target = coercionTarget(schema);
-  let input$1;
-  if (input !== undefined) {
-    let exit = 0;
-    if (input === "" && !allowEmpty) {
-      input$1 = undefined;
-    } else {
-      exit = 1;
-    }
-    if (exit === 1) {
-      input$1 = target !== undefined ? coerceString(input, target) : input;
-    }
-  } else {
-    input$1 = undefined;
-  }
-  let schema$1 = target !== undefined ? schema : coerceUnion(schema);
+  let input$1 = input === "" && !allowEmpty ? undefined : input;
   try {
-    return Sury.parseOrThrow(input$1, schema$1);
+    return Sury.parseOrThrow(input$1, coerceSchema(schema));
   } catch (raw_error) {
     let error = Primitive_exceptions.internalToException(raw_error);
     if (error.RE_EXN_ID === S.Exn) {
@@ -217,4 +189,4 @@ export {
   close,
   get,
 }
-/* S Not a pure module */
+/* boolString Not a pure module */
