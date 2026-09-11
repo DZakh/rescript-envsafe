@@ -93,7 +93,7 @@ let close = envSafe => {
         maybeInvalidIssues->Stdlib.Option.forEach(invalidIssues => {
           output->Array.push("❌ Invalid environment variables:")->ignore
           invalidIssues->Array.forEach(issue => {
-            output->Array.push(`    ${issue.name}: ${issue.error->S.Error.message}`)->ignore
+            output->Array.push(`    ${issue.name}: ${issue.error.message}`)->ignore
           })
         })
 
@@ -156,37 +156,58 @@ let jsonCoerce = string => {
   }
 }
 
-@inline
-let prepareUnionSchemaCoercion = schema => {
-  schema->S.preprocess(s => {
-    let tagged = switch s.schema->S.classify {
-    | Option(optionalSchema) => optionalSchema->S.classify
-    | tagged => tagged
+// Sury flattens nested unions and spells `S.option(X)` as an `X | undefined`
+// union, so the `undefined` member comes off before asking what a raw string
+// should coerce to. One member left means the schema reads as that type; more
+// than one is a real union, where every member coerces on its own.
+let coercionTarget = (schema: S.t<'value>): option<S.t<unknown>> =>
+  switch schema {
+  | S.AnyOf({anyOf}) =>
+    switch anyOf->Array.filter(member =>
+      switch member {
+      | S.Undefined(_) => false
+      | _ => true
+      }
+    ) {
+    | [member] => Some(member)
+    | _ => None
     }
-    switch tagged {
-    | Literal(Boolean(_))
-    | Bool => {
-        parser: unknown => unknown->magic->boolCoerce->magic,
-      }
-    | Literal(BigInt(_))
-    | BigInt => {
-        parser: unknown => unknown->magic->bigintCoerce->magic,
-      }
-    | Literal(Number(_))
-    | Int
-    | Float => {
-        parser: unknown => unknown->magic->numberCoerce->magic,
-      }
-    | String
-    | Literal(String(_))
-    | Union(_)
-    | Never => {}
-    | _ => {
-        parser: unknown => unknown->magic->jsonCoerce->magic,
-      }
-    }
-  })
-}
+  | leaf => Some(leaf->S.castToUnknown)
+  }
+
+let coerceString = (string, schema) =>
+  switch schema {
+  | S.Boolean(_) => string->boolCoerce
+  | S.BigInt(_) => string->bigintCoerce
+  | S.Number(_) => string->numberCoerce
+  | S.String(_)
+  | S.Never(_) => string
+  | _ => string->jsonCoerce
+  }
+
+// A union carrying its own refinement or conversion is a normal schema rather
+// than a union (Sury's CODEC_SPEC.md), and rebuilding it from `anyOf` would
+// drop what it carries - so leave those alone and pass the string through.
+// `decoder`/`encoder` are the compiled dispatch every union has, not own logic.
+// `refiner` has no field on `S.untagged`, hence the raw read.
+let carriesOwnLogic = (schema: S.t<'value>) =>
+  %raw(`s => s.refiner !== undefined`)(schema) || (schema->S.untag).to->Option.isSome
+
+// `S.to` replaces the preprocessor rescript-schema distributed over a union's
+// members: each member decodes the raw string the way its own type wants.
+let coerceUnion = (schema: S.t<'value>): S.t<'value> =>
+  switch schema {
+  | S.AnyOf({anyOf}) if !(schema->carriesOwnLogic) =>
+    S.union(
+      anyOf->Array.map(member =>
+        S.any->S.to(
+          member,
+          ~custom={decode: Sync(input => input->magic->coerceString(member)->magic), encode: Never},
+        )
+      ),
+    )->magic
+  | _ => schema
+  }
 
 let get = (
   envSafe,
@@ -209,8 +230,8 @@ let get = (
   | (Some(""), false) => true
   | _ => false
   }
-  let isOptional = switch schema->S.classify {
-  | Option(_) => true
+  let isOptional = switch schema {
+  | S.AnyOf({has: {undefined: true}}) => true
   | _ => false
   }
   if isMissing && !isOptional {
@@ -224,38 +245,22 @@ let get = (
       }
     }
   } else {
-    let tagged = switch schema->S.classify {
-    | Option(optionalSchema) => optionalSchema->S.classify
-    | tagged => tagged
-    }
+    let target = schema->coercionTarget
     let input = switch input {
     | Some("") if !allowEmpty => None
     | None => None
     | Some(string) =>
-      switch tagged {
-      | Literal(Boolean(_))
-      | Bool =>
-        string->boolCoerce
-      | Literal(BigInt(_))
-      | BigInt =>
-        string->bigintCoerce
-      | Literal(Number(_))
-      | Int
-      | Float =>
-        string->numberCoerce
-      | String
-      | Literal(String(_))
-      | Never
-      | Union(_) => string
-      | _ => string->jsonCoerce
+      switch target {
+      | Some(member) => string->coerceString(member)
+      | None => string
       }->Some
     }
-    let schema = switch tagged {
-    | Union(_) => prepareUnionSchemaCoercion(schema)
-    | _ => schema
+    let schema = switch target {
+    | Some(_) => schema
+    | None => schema->coerceUnion
     }
-    try input->S.parseOrThrow(schema) catch {
-    | S.Raised(error) => {
+    try input->S.parseOrThrow(~to=schema) catch {
+    | S.Exn(error) => {
         envSafe->mixinInvalidIssue({name, error, input})
         %raw(`undefined`)
       }

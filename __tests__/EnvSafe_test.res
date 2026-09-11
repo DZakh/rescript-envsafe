@@ -305,8 +305,8 @@ test("Closes with 1 valid, 3 missing and 2 invalid environment variables", t => 
       name: "TypeError",
       message: `========================================
 ❌ Invalid environment variables:
-    BOOL_ENV1: Failed parsing at root. Reason: Expected int32, received "true"
-    BOOL_ENV2: Failed parsing at root. Reason: Expected true, received false
+    BOOL_ENV1: Expected int32, received "true"
+    BOOL_ENV2: Expected true, received false
 💨 Missing environment variables:
     MISSING_ENV1: Missing value
     MISSING_ENV2: Missing value
@@ -324,7 +324,7 @@ test(`Doesn't show input value when it's missing for invalid env`, t => {
   )
 
   t->Assert.is(
-    envSafe->EnvSafe.get("MISSING_ENV", S.int->S.option->S.refine(s => _ => s.fail("User error"))),
+    envSafe->EnvSafe.get("MISSING_ENV", S.int->S.option->S.refine(_ => false, ~error="User error")),
     %raw(`undefined`),
   )
   t->Assert.throws(
@@ -335,7 +335,7 @@ test(`Doesn't show input value when it's missing for invalid env`, t => {
       name: "TypeError",
       message: `========================================
 ❌ Invalid environment variables:
-    MISSING_ENV: Failed parsing at root. Reason: User error
+    MISSING_ENV: User error
 ========================================`,
     },
   )
