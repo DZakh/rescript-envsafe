@@ -2,8 +2,7 @@
   "name": "rescript-envsafe",
   "namespace": false,
   "dev-dependencies": ["@dzakh/rescript-ava"],
-  "dependencies": ["rescript-schema"],
-  "compiler-flags": ["-open RescriptSchema"],
+  "dependencies": ["sury"],
   "suffix": ".res.mjs",
   "package-specs": {
     "module": "esmodule",

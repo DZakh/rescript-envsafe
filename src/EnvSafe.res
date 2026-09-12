@@ -46,7 +46,7 @@ module Error = {
 
 type env = dict<string>
 type invalidIssue = {name: string, error: S.error, input: option<string>}
-type missingIssue = {name: string, input: option<string>}
+type missingIssue = {name: string}
 type t = {
   env: env,
   mutable isLocked: bool,
@@ -93,21 +93,14 @@ let close = envSafe => {
         maybeInvalidIssues->Stdlib.Option.forEach(invalidIssues => {
           output->Array.push("❌ Invalid environment variables:")->ignore
           invalidIssues->Array.forEach(issue => {
-            output->Array.push(`    ${issue.name}: ${issue.error->S.Error.message}`)->ignore
+            output->Array.push(`    ${issue.name}: ${issue.error.message}`)->ignore
           })
         })
 
         maybeMissingIssues->Stdlib.Option.forEach(missingIssues => {
           output->Array.push("💨 Missing environment variables:")->ignore
           missingIssues->Array.forEach(issue => {
-            output
-            ->Array.push(
-              `    ${issue.name}: ${switch issue.input {
-                | Some("") => "Disallowed empty string"
-                | _ => "Missing value"
-                }}`,
-            )
-            ->ignore
+            output->Array.push(`    ${issue.name}: Missing value`)->ignore
           })
         })
 
@@ -122,77 +115,102 @@ let close = envSafe => {
   }
 }
 
-let boolCoerce = string =>
-  switch string {
-  | "true"
-  | "t"
-  | "1" =>
-    true->magic
-  | "false"
-  | "f"
-  | "0" =>
-    false->magic
-  | _ => string
+// `S.env` is Sury's environment-variable codec: it reads a raw string into
+// literals, numbers, bigints, options and literal unions, and it answers what a
+// blank means from the schema the caller wrote - `S.nonEmpty` to reject one,
+// `S.minLength(0)` to keep it, `S.option` to read it as absent. Two things it
+// does not do:
+//
+// - the "t"/"f"/"1"/"0" spellings envsafe documents, normalized in the value
+//   below so that the conversion stays a plain `S.env->S.to(schema)`. Wrapping
+//   `S.env` in a coder to do it in the schema costs the option handling: the
+//   coder's source is a string, so a missing var is rejected before the
+//   `undefined` member is reached.
+// - anything JSON-shaped, where the string is a document rather than a value
+//   `S.env` could reach (`Can't decode env -> int32[]`). `S.jsonString` is that
+//   reading, and `S.unknown` wants it too - `S.env` hands back the raw string.
+//
+// The reading has to be picked by shape, not by trying one and catching: `S.to`
+// builds lazily, so an unreachable conversion only fails when a value arrives.
+let needsJsonReading = member =>
+  switch member {
+  | S.String(_)
+  | S.Boolean(_)
+  | S.Number(_)
+  | S.BigInt(_)
+  | S.Never(_) => false
+  | _ => true
   }
 
-let numberCoerce = string => {
-  let float = %raw(`+string`)
-  if Float.isNaN(float) {
-    string
+let coerceWith = (schema: S.t<'value>, member): S.t<'value> =>
+  if member->needsJsonReading {
+    S.jsonString->S.to(schema)
   } else {
-    float->magic
+    S.env->S.to(schema)
   }
-}
 
-let bigintCoerce = string => {
-  try string->BigInt.fromStringOrThrow->magic catch {
+// Anything the codec doesn't read passes through for the schema to reject,
+// which is what keeps "2" an error rather than a silent `false`.
+let normalizeBool = (string, schema: S.t<'value>) =>
+  switch schema {
+  | S.Boolean(_)
+  | S.AnyOf({has: {boolean: true}}) =>
+    switch string {
+    | "t" | "1" => "true"
+    | "f" | "0" => "false"
+    | string => string
+    }
   | _ => string
   }
-}
 
-let jsonCoerce = string => {
-  try string->JSON.parseOrThrow->magic catch {
-  | _ => string
+// A union carrying its own refinement or conversion is a normal schema rather
+// than a union (Sury's CODEC_SPEC.md), and rebuilding it from `anyOf` would
+// drop what it carries. `decoder`/`encoder` are the compiled dispatch every
+// union has, not own logic; `refiner` has no field on `S.untagged`.
+let carriesOwnLogic = (schema: S.t<'value>) =>
+  %raw(`s => s.refiner !== undefined`)(schema) || (schema->S.untag).to->Option.isSome
+
+// Sury flattens nested unions and spells `S.option(X)` as an `X | undefined`
+// union, and it reads an option or a single-type union as a whole - `S.option`
+// is itself one of the three answers to what a blank means. A union mixing
+// types has no single reading ("Ambiguous string -> boolean | string"), so
+// there each member is wrapped on its own.
+let coerceSchema = (schema: S.t<'value>): S.t<'value> =>
+  switch schema {
+  | S.AnyOf({anyOf}) if !(schema->carriesOwnLogic) =>
+    let members = anyOf->Array.filter(member =>
+      switch member {
+      | S.Undefined(_) => false
+      | _ => true
+      }
+    )
+    let tags = members->Array.map(member => (member->S.untag).tag)
+    switch (members->Array.get(0), tags->Array.get(0)) {
+    | (Some(first), Some(firstTag)) =>
+      if tags->Array.every(tag => tag === firstTag) {
+        schema->coerceWith(first)
+      } else {
+        S.union(
+          anyOf->Array.map(member =>
+            switch member {
+            | S.Undefined(_) => member
+            | _ => member->coerceWith(member)
+            }
+          ),
+        )->magic
+      }
+    | _ => schema
+    }
+  // A union carrying its own logic is left alone: there is no single member to
+  // read the string as, and the JSON reading would be wrong for it.
+  | S.AnyOf(_) => schema
+  | leaf => schema->coerceWith(leaf)
   }
-}
-
-@inline
-let prepareUnionSchemaCoercion = schema => {
-  schema->S.preprocess(s => {
-    let tagged = switch s.schema->S.classify {
-    | Option(optionalSchema) => optionalSchema->S.classify
-    | tagged => tagged
-    }
-    switch tagged {
-    | Literal(Boolean(_))
-    | Bool => {
-        parser: unknown => unknown->magic->boolCoerce->magic,
-      }
-    | Literal(BigInt(_))
-    | BigInt => {
-        parser: unknown => unknown->magic->bigintCoerce->magic,
-      }
-    | Literal(Number(_))
-    | Int
-    | Float => {
-        parser: unknown => unknown->magic->numberCoerce->magic,
-      }
-    | String
-    | Literal(String(_))
-    | Union(_)
-    | Never => {}
-    | _ => {
-        parser: unknown => unknown->magic->jsonCoerce->magic,
-      }
-    }
-  })
-}
 
 let get = (
   envSafe,
   name,
   schema,
-  ~allowEmpty=false,
   ~fallback as maybeFallback=?,
   ~devFallback as maybeDevFallback=?,
   ~input as maybeInlinedInput=?,
@@ -204,13 +222,9 @@ let get = (
   | Some(inlinedInput) => inlinedInput
   | None => envSafe.env->Stdlib.Dict.get(name)
   }
-  let isMissing = switch (input, allowEmpty) {
-  | (None, _)
-  | (Some(""), false) => true
-  | _ => false
-  }
-  let isOptional = switch schema->S.classify {
-  | Option(_) => true
+  let isMissing = input === None
+  let isOptional = switch schema {
+  | S.AnyOf({has: {undefined: true}}) => true
   | _ => false
   }
   if isMissing && !isOptional {
@@ -219,43 +233,14 @@ let get = (
       if envSafe.env->Stdlib.Dict.get("NODE_ENV") !== Some("production") => devFallback
     | (_, Some(fallback)) => fallback
     | _ => {
-        envSafe->mixinMissingIssue({name, input})
+        envSafe->mixinMissingIssue({name: name})
         %raw(`undefined`)
       }
     }
   } else {
-    let tagged = switch schema->S.classify {
-    | Option(optionalSchema) => optionalSchema->S.classify
-    | tagged => tagged
-    }
-    let input = switch input {
-    | Some("") if !allowEmpty => None
-    | None => None
-    | Some(string) =>
-      switch tagged {
-      | Literal(Boolean(_))
-      | Bool =>
-        string->boolCoerce
-      | Literal(BigInt(_))
-      | BigInt =>
-        string->bigintCoerce
-      | Literal(Number(_))
-      | Int
-      | Float =>
-        string->numberCoerce
-      | String
-      | Literal(String(_))
-      | Never
-      | Union(_) => string
-      | _ => string->jsonCoerce
-      }->Some
-    }
-    let schema = switch tagged {
-    | Union(_) => prepareUnionSchemaCoercion(schema)
-    | _ => schema
-    }
-    try input->S.parseOrThrow(schema) catch {
-    | S.Raised(error) => {
+    let input = input->Option.map(string => string->normalizeBool(schema))
+    try input->S.parseOrThrow(~to=schema->coerceSchema) catch {
+    | S.Exn(error) => {
         envSafe->mixinInvalidIssue({name, error, input})
         %raw(`undefined`)
       }

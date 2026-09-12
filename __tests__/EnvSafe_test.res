@@ -7,7 +7,7 @@ test("Successfully get String value", t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("STRING_ENV", S.string), "abc")
+  t->Assert.is(envSafe->EnvSafe.get("STRING_ENV", S.string->S.nonEmpty), S.NonEmpty("abc"))
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
   })
@@ -20,7 +20,10 @@ test("Successfully get String value when provided input", t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("STRING_ENV", S.string, ~input=%raw(`"bar"`)), "bar")
+  t->Assert.is(
+    envSafe->EnvSafe.get("STRING_ENV", S.string->S.nonEmpty, ~input=%raw(`"bar"`)),
+    S.NonEmpty("bar"),
+  )
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
   })
@@ -34,7 +37,7 @@ test("Fails to get String value when provided undefined input even with existing
   )
 
   t->Assert.is(
-    envSafe->EnvSafe.get("STRING_ENV", S.string, ~input=%raw(`undefined`)),
+    envSafe->EnvSafe.get("STRING_ENV", S.string->S.nonEmpty, ~input=%raw(`undefined`)),
     %raw(`undefined`),
   )
   t->Assert.throws(
@@ -51,14 +54,14 @@ test("Fails to get String value when provided undefined input even with existing
   )
 })
 
-test("Fails to get String value when env is an empty string", t => {
+test("Fails to get String value when env is an empty string and the schema rejects a blank", t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "STRING_ENV": "",
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("STRING_ENV", S.string), %raw(`undefined`))
+  t->Assert.is(envSafe->EnvSafe.get("STRING_ENV", S.string->S.nonEmpty), %raw(`undefined`))
   t->Assert.throws(
     () => {
       envSafe->EnvSafe.close
@@ -66,46 +69,37 @@ test("Fails to get String value when env is an empty string", t => {
     ~expectations={
       name: "TypeError",
       message: `========================================
-💨 Missing environment variables:
-    STRING_ENV: Disallowed empty string
+❌ Invalid environment variables:
+    STRING_ENV: Expected string.length >= 1, received ""
 ========================================`,
     },
   )
 })
 
-test("Successfully get String value when env is an empty string and allowEmpty is true", t => {
+test("Successfully get String value when env is an empty string and the schema keeps a blank", t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "STRING_ENV": "",
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("STRING_ENV", S.string, ~allowEmpty=true), "")
+  t->Assert.is(envSafe->EnvSafe.get("STRING_ENV", S.string->S.minLength(0)), "")
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
   })
 })
 
-test(`Fails to get String Literal ("") value when env is an empty string`, t => {
+test(`Successfully get String Literal ("") value when env is an empty string`, t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "STRING_ENV": "",
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("STRING_ENV", S.literal("")), %raw(`undefined`))
-  t->Assert.throws(
-    () => {
-      envSafe->EnvSafe.close
-    },
-    ~expectations={
-      name: "TypeError",
-      message: `========================================
-💨 Missing environment variables:
-    STRING_ENV: Disallowed empty string
-========================================`,
-    },
-  )
+  t->Assert.is(envSafe->EnvSafe.get("STRING_ENV", S.literal("")), "")
+  t->Assert.notThrows(() => {
+    envSafe->EnvSafe.close
+  })
 })
 
 test("Fails to get value when env is missing", t => {
@@ -115,7 +109,7 @@ test("Fails to get value when env is missing", t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("MISSING_ENV", S.string), %raw(`undefined`))
+  t->Assert.is(envSafe->EnvSafe.get("MISSING_ENV", S.string->S.nonEmpty), %raw(`undefined`))
   t->Assert.throws(
     () => {
       envSafe->EnvSafe.close
@@ -274,7 +268,7 @@ test("Successfully get defaulted value when env is missing", t => {
   })
 })
 
-test("Closes with 1 valid, 3 missing and 2 invalid environment variables", t => {
+test("Closes with 1 valid, 2 missing and 3 invalid environment variables", t => {
   let envSafe = EnvSafe.make(
     ~env=Obj.magic({
       "STRING_ENV": "abc",
@@ -285,7 +279,7 @@ test("Closes with 1 valid, 3 missing and 2 invalid environment variables", t => 
   )
 
   // valid 1
-  t->Assert.is(envSafe->EnvSafe.get("STRING_ENV", S.string), "abc")
+  t->Assert.is(envSafe->EnvSafe.get("STRING_ENV", S.string->S.nonEmpty), S.NonEmpty("abc"))
   // invalid 1
   envSafe->EnvSafe.get("BOOL_ENV1", S.int)->ignore
   // invalid 2
@@ -293,9 +287,9 @@ test("Closes with 1 valid, 3 missing and 2 invalid environment variables", t => 
   // missing 1
   envSafe->EnvSafe.get("MISSING_ENV1", S.int)->ignore
   // missing 2
-  envSafe->EnvSafe.get("MISSING_ENV2", S.string)->ignore
-  // missing 3
-  envSafe->EnvSafe.get("EMPTY_STRING_ENV", S.string)->ignore
+  envSafe->EnvSafe.get("MISSING_ENV2", S.string->S.nonEmpty)->ignore
+  // invalid 3: a blank is the schema's call now, not a missing var
+  envSafe->EnvSafe.get("EMPTY_STRING_ENV", S.string->S.nonEmpty)->ignore
 
   t->Assert.throws(
     () => {
@@ -305,12 +299,12 @@ test("Closes with 1 valid, 3 missing and 2 invalid environment variables", t => 
       name: "TypeError",
       message: `========================================
 ❌ Invalid environment variables:
-    BOOL_ENV1: Failed parsing at root. Reason: Expected int32, received "true"
-    BOOL_ENV2: Failed parsing at root. Reason: Expected true, received false
+    BOOL_ENV1: Expected int32, received "true"
+    BOOL_ENV2: Expected "true", received "false"
+    EMPTY_STRING_ENV: Expected string.length >= 1, received ""
 💨 Missing environment variables:
     MISSING_ENV1: Missing value
     MISSING_ENV2: Missing value
-    EMPTY_STRING_ENV: Disallowed empty string
 ========================================`,
     },
   )
@@ -324,7 +318,7 @@ test(`Doesn't show input value when it's missing for invalid env`, t => {
   )
 
   t->Assert.is(
-    envSafe->EnvSafe.get("MISSING_ENV", S.int->S.option->S.refine(s => _ => s.fail("User error"))),
+    envSafe->EnvSafe.get("MISSING_ENV", S.int->S.option->S.refine(_ => false, ~error="User error")),
     %raw(`undefined`),
   )
   t->Assert.throws(
@@ -335,7 +329,7 @@ test(`Doesn't show input value when it's missing for invalid env`, t => {
       name: "TypeError",
       message: `========================================
 ❌ Invalid environment variables:
-    MISSING_ENV: Failed parsing at root. Reason: User error
+    MISSING_ENV: User error
 ========================================`,
     },
   )
@@ -355,7 +349,7 @@ test("Applies preprocessor logic for union schemas separately", t => {
     #String("foo"),
   )
   t->Assert.deepEqual(
-    envSafe->EnvSafe.get("STRING_EMPTY_ENV", schema, ~input=Some(""), ~allowEmpty=true),
+    envSafe->EnvSafe.get("STRING_EMPTY_ENV", schema, ~input=Some("")),
     #String(""),
   )
   t->Assert.deepEqual(
@@ -380,7 +374,7 @@ test("Fails to access EnvSafe after close", t => {
   })
 
   t->Assert.throws(
-    () => {envSafe->EnvSafe.get("STRING_ENV", S.string)},
+    () => {envSafe->EnvSafe.get("STRING_ENV", S.string->S.nonEmpty)},
     ~expectations={
       message: "[rescript-envsafe] EnvSafe is closed. Make a new one to get access to environment variables.",
     },

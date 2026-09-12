@@ -11,7 +11,6 @@ let get: (
   t,
   string,
   S.t<'value>,
-  ~allowEmpty: bool=?,
   ~fallback: 'value=?,
   ~devFallback: 'value=?,
   ~input: option<string>=?,

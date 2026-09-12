@@ -46,7 +46,7 @@ test(`Uses JSON parsing with JSON schema`, t => {
     }),
   )
 
-  t->Assert.deepEqual(envSafe->EnvSafe.get("ENV", S.json(~validate=true)), [1, 2]->Obj.magic)
+  t->Assert.deepEqual(envSafe->EnvSafe.get("ENV", S.json), [1, 2]->Obj.magic)
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
   })
@@ -67,7 +67,7 @@ test(`Doesn't use JSON parsing with never schema`, t => {
     ~expectations={
       message: `========================================
 ❌ Invalid environment variables:
-    ENV: Failed parsing at root. Reason: Expected never, received "[1, 2]"
+    ENV: Expected never, received "[1, 2]"
 ========================================`,
     },
   )
@@ -88,7 +88,7 @@ test(`Fails with invalid json string`, t => {
     ~expectations={
       message: `========================================
 ❌ Invalid environment variables:
-    ENV: Failed parsing at root. Reason: Expected array<int32>, received "[1, 2],"
+    ENV: Expected JSON string, received "[1, 2],"
 ========================================`,
     },
   )
