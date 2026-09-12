@@ -122,8 +122,10 @@ let close = envSafe => {
 // does not do:
 //
 // - the "t"/"f"/"1"/"0" spellings envsafe documents, normalized in the value
-//   below rather than in the schema. Layering a coder on `S.env` would cost its
-//   option handling: `boolEnv->S.to(S.option(S.bool))` rejects a missing var.
+//   below so that the conversion stays a plain `S.env->S.to(schema)`. Wrapping
+//   `S.env` in a coder to do it in the schema costs the option handling: the
+//   coder's source is a string, so a missing var is rejected before the
+//   `undefined` member is reached.
 // - anything JSON-shaped, where the string is a document rather than a value
 //   `S.env` could reach (`Can't decode env -> int32[]`). `S.jsonString` is that
 //   reading, and `S.unknown` wants it too - `S.env` hands back the raw string.
