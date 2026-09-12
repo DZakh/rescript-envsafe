@@ -35,8 +35,8 @@ let nodeEnv = envSafe->EnvSafe.get(
 )
 let port = envSafe->EnvSafe.get("PORT", S.port, ~fallback=S.Port(3000))
 let apiUrl = envSafe->EnvSafe.get("API_URL", S.httpUrl, ~devFallback=S.HttpUrl("https://example.com/graphql"))
-let auth0ClientId = envSafe->EnvSafe.get("AUTH0_CLIENT_ID", S.string)
-let auth0Domain = envSafe->EnvSafe.get("AUTH0_DOMAIN", S.string)
+let auth0ClientId = envSafe->EnvSafe.get("AUTH0_CLIENT_ID", S.string->S.nonEmpty)
+let auth0Domain = envSafe->EnvSafe.get("AUTH0_DOMAIN", S.string->S.nonEmpty)
 
 // 🧠 If you forget to close `envSafe` then invalid vars end up being `undefined` leading to an expected runtime error.
 envSafe->EnvSafe.close
@@ -101,12 +101,16 @@ envSafe->EnvSafe.get("NAME", S.string)
 ```
 
 ```rescript
-envSafe->EnvSafe.get("NAME", S.string->S.minLength(1)) // rejected, reported as invalid
+envSafe->EnvSafe.get("NAME", S.string->S.nonEmpty) // rejected, reported as invalid
 envSafe->EnvSafe.get("NAME", S.string->S.minLength(0)) // kept as ""
 envSafe->EnvSafe.get("NAME", S.option(S.string)) // read as None
 ```
 
 Only a variable that isn't set at all is reported as missing.
+
+`S.nonEmpty` carries its own value type, so the name reads back as
+`S.NonEmpty("abc")`. Use `S.minLength(1)` to reject a blank and keep a plain
+`string`.
 
 ### **`EnvSafe.close`**
 

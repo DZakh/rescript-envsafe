@@ -7,7 +7,7 @@ test("Successfully get String value", t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("STRING_ENV", S.string->S.minLength(1)), "abc")
+  t->Assert.is(envSafe->EnvSafe.get("STRING_ENV", S.string->S.nonEmpty), S.NonEmpty("abc"))
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
   })
@@ -20,7 +20,10 @@ test("Successfully get String value when provided input", t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("STRING_ENV", S.string->S.minLength(1), ~input=%raw(`"bar"`)), "bar")
+  t->Assert.is(
+    envSafe->EnvSafe.get("STRING_ENV", S.string->S.nonEmpty, ~input=%raw(`"bar"`)),
+    S.NonEmpty("bar"),
+  )
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
   })
@@ -34,7 +37,7 @@ test("Fails to get String value when provided undefined input even with existing
   )
 
   t->Assert.is(
-    envSafe->EnvSafe.get("STRING_ENV", S.string->S.minLength(1), ~input=%raw(`undefined`)),
+    envSafe->EnvSafe.get("STRING_ENV", S.string->S.nonEmpty, ~input=%raw(`undefined`)),
     %raw(`undefined`),
   )
   t->Assert.throws(
@@ -58,7 +61,7 @@ test("Fails to get String value when env is an empty string and the schema rejec
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("STRING_ENV", S.string->S.minLength(1)), %raw(`undefined`))
+  t->Assert.is(envSafe->EnvSafe.get("STRING_ENV", S.string->S.nonEmpty), %raw(`undefined`))
   t->Assert.throws(
     () => {
       envSafe->EnvSafe.close
@@ -106,7 +109,7 @@ test("Fails to get value when env is missing", t => {
     }),
   )
 
-  t->Assert.is(envSafe->EnvSafe.get("MISSING_ENV", S.string->S.minLength(1)), %raw(`undefined`))
+  t->Assert.is(envSafe->EnvSafe.get("MISSING_ENV", S.string->S.nonEmpty), %raw(`undefined`))
   t->Assert.throws(
     () => {
       envSafe->EnvSafe.close
@@ -276,7 +279,7 @@ test("Closes with 1 valid, 2 missing and 3 invalid environment variables", t => 
   )
 
   // valid 1
-  t->Assert.is(envSafe->EnvSafe.get("STRING_ENV", S.string->S.minLength(1)), "abc")
+  t->Assert.is(envSafe->EnvSafe.get("STRING_ENV", S.string->S.nonEmpty), S.NonEmpty("abc"))
   // invalid 1
   envSafe->EnvSafe.get("BOOL_ENV1", S.int)->ignore
   // invalid 2
@@ -284,9 +287,9 @@ test("Closes with 1 valid, 2 missing and 3 invalid environment variables", t => 
   // missing 1
   envSafe->EnvSafe.get("MISSING_ENV1", S.int)->ignore
   // missing 2
-  envSafe->EnvSafe.get("MISSING_ENV2", S.string->S.minLength(1))->ignore
+  envSafe->EnvSafe.get("MISSING_ENV2", S.string->S.nonEmpty)->ignore
   // invalid 3: a blank is the schema's call now, not a missing var
-  envSafe->EnvSafe.get("EMPTY_STRING_ENV", S.string->S.minLength(1))->ignore
+  envSafe->EnvSafe.get("EMPTY_STRING_ENV", S.string->S.nonEmpty)->ignore
 
   t->Assert.throws(
     () => {
@@ -371,7 +374,7 @@ test("Fails to access EnvSafe after close", t => {
   })
 
   t->Assert.throws(
-    () => {envSafe->EnvSafe.get("STRING_ENV", S.string->S.minLength(1))},
+    () => {envSafe->EnvSafe.get("STRING_ENV", S.string->S.nonEmpty)},
     ~expectations={
       message: "[rescript-envsafe] EnvSafe is closed. Make a new one to get access to environment variables.",
     },
