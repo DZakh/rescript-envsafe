@@ -63,10 +63,7 @@ function close(envSafe) {
     let missingIssues = Primitive_option.valFromOption(match);
     output.push("💨 Missing environment variables:");
     missingIssues.forEach(issue => {
-      let match = issue.input;
-      let tmp;
-      tmp = match === "" ? "Disallowed empty string" : "Missing value";
-      output.push(`    ` + issue.name + `: ` + tmp);
+      output.push(`    ` + issue.name + `: Missing value`);
     });
   }
   output.push(line);
@@ -76,38 +73,24 @@ function close(envSafe) {
   throw new TypeError(text);
 }
 
-let boolString = S.to(Sury.string, Sury.string, {
-  decode: {
-    TAG: "Sync",
-    _0: string => {
-      switch (string) {
-        case "0" :
-        case "f" :
-        case "false" :
-          return "false";
-        case "1" :
-        case "t" :
-        case "true" :
-          return "true";
-        default:
-          return string;
-      }
-    }
-  },
-  encode: "auto"
-});
-
-function coerceLeaf(schema) {
-  switch (schema.type) {
+function needsJsonReading(member) {
+  switch (member.type) {
     case "never" :
     case "string" :
     case "number" :
     case "bigint" :
-      return S.to(Sury.string, schema, undefined);
     case "boolean" :
-      return S.to(boolString, schema, undefined);
+      return false;
     default:
-      return S.to(Sury.jsonString, schema, undefined);
+      return true;
+  }
+}
+
+function coerceWith(schema, member) {
+  if (needsJsonReading(member)) {
+    return S.to(Sury.jsonString, schema, undefined);
+  } else {
+    return S.to(Sury.env, schema, undefined);
   }
 }
 
@@ -120,32 +103,40 @@ function carriesOwnLogic(schema) {
 }
 
 function coerceSchema(schema) {
-  if (schema.type === "anyOf") {
-    if (carriesOwnLogic(schema)) {
-      return schema;
+  if (schema.type !== "anyOf") {
+    return coerceWith(schema, schema);
+  }
+  let anyOf = schema.anyOf;
+  if (carriesOwnLogic(schema)) {
+    return schema;
+  }
+  let members = anyOf.filter(member => member.type !== "undefined");
+  let tags = members.map(member => member.type);
+  let match = members[0];
+  let match$1 = tags[0];
+  if (match !== undefined && match$1 !== undefined) {
+    if (tags.every(tag => tag === match$1)) {
+      return coerceWith(schema, match);
     } else {
-      return Sury.union(schema.anyOf.map(member => {
+      return Sury.union(anyOf.map(member => {
         if (member.type === "undefined") {
           return member;
         } else {
-          return coerceLeaf(member);
+          return coerceWith(member, member);
         }
       }));
     }
   } else {
-    return coerceLeaf(schema);
+    return schema;
   }
 }
 
-function get(envSafe, name, schema, allowEmptyOpt, maybeFallback, maybeDevFallback, maybeInlinedInput) {
-  let allowEmpty = allowEmptyOpt !== undefined ? allowEmptyOpt : false;
+function get(envSafe, name, schema, maybeFallback, maybeDevFallback, maybeInlinedInput) {
   if (envSafe.isLocked) {
     throw new Error(`[rescript-envsafe] ` + "EnvSafe is closed. Make a new one to get access to environment variables.");
   }
   let input = maybeInlinedInput !== undefined ? Primitive_option.valFromOption(maybeInlinedInput) : envSafe.env[name];
-  let isMissing = input !== undefined ? (
-      input === "" ? !allowEmpty : false
-    ) : true;
+  let isMissing = input === undefined;
   let isOptional;
   if (schema.type === "anyOf") {
     let match = schema.has.undefined;
@@ -161,13 +152,38 @@ function get(envSafe, name, schema, allowEmptyOpt, maybeFallback, maybeDevFallba
       return Primitive_option.valFromOption(maybeFallback);
     } else {
       mixinMissingIssue(envSafe, {
-        name: name,
-        input: input
+        name: name
       });
       return undefined;
     }
   }
-  let input$1 = input === "" && !allowEmpty ? undefined : input;
+  let input$1 = Stdlib_Option.map(input, string => {
+    switch (schema.type) {
+      case "boolean" :
+        break;
+      case "anyOf" :
+        let match = schema.has.boolean;
+        if (match === undefined) {
+          return string;
+        }
+        if (!match) {
+          return string;
+        }
+        break;
+      default:
+        return string;
+    }
+    switch (string) {
+      case "0" :
+      case "f" :
+        return "false";
+      case "1" :
+      case "t" :
+        return "true";
+      default:
+        return string;
+    }
+  });
   try {
     return Sury.parseOrThrow(input$1, coerceSchema(schema));
   } catch (raw_error) {
@@ -189,4 +205,4 @@ export {
   close,
   get,
 }
-/* boolString Not a pure module */
+/* S Not a pure module */

@@ -28,8 +28,8 @@ test(`Works with Example code`, t => {
     ),
     S.HttpUrl("https://example.com/foo"),
   )
-  t->Assert.is(envSafe->EnvSafe.get("AUTH0_CLIENT_ID", S.string), "xxxxx")
-  t->Assert.is(envSafe->EnvSafe.get("AUTH0_DOMAIN", S.string), "xxxxx.auth0.com")
+  t->Assert.is(envSafe->EnvSafe.get("AUTH0_CLIENT_ID", S.string->S.minLength(1)), "xxxxx")
+  t->Assert.is(envSafe->EnvSafe.get("AUTH0_DOMAIN", S.string->S.minLength(1)), "xxxxx.auth0.com")
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
   })
