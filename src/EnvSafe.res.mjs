@@ -2,6 +2,7 @@
 
 import * as S from "sury/src/S.res.mjs";
 import * as Sury from "sury";
+import * as Stdlib_Array from "@rescript/runtime/lib/es6/Stdlib_Array.js";
 import * as Stdlib_Option from "@rescript/runtime/lib/es6/Stdlib_Option.js";
 import * as Primitive_option from "@rescript/runtime/lib/es6/Primitive_option.js";
 import * as Primitive_exceptions from "@rescript/runtime/lib/es6/Primitive_exceptions.js";
@@ -87,10 +88,43 @@ function needsJsonReading(member) {
 }
 
 function coerceWith(schema, member) {
-  if (needsJsonReading(member)) {
+  if (member.type === "unknown") {
+    return Sury.union([
+      S.to(Sury.jsonString, schema, undefined),
+      S.to(Sury.env, schema, undefined)
+    ]);
+  } else if (needsJsonReading(member)) {
     return S.to(Sury.jsonString, schema, undefined);
   } else {
     return S.to(Sury.env, schema, undefined);
+  }
+}
+
+function normalizeBool(string, schema) {
+  switch (schema.type) {
+    case "boolean" :
+      break;
+    case "anyOf" :
+      let match = schema.has.boolean;
+      if (match === undefined) {
+        return string;
+      }
+      if (!match) {
+        return string;
+      }
+      break;
+    default:
+      return string;
+  }
+  switch (string) {
+    case "0" :
+    case "f" :
+      return "false";
+    case "1" :
+    case "t" :
+      return "true";
+    default:
+      return string;
   }
 }
 
@@ -158,30 +192,19 @@ function get(envSafe, name, schema, maybeFallback, maybeDevFallback, maybeInline
     }
   }
   let input$1 = Stdlib_Option.map(input, string => {
-    switch (schema.type) {
-      case "boolean" :
-        break;
-      case "anyOf" :
-        let match = schema.has.boolean;
-        if (match === undefined) {
-          return string;
+    let string$1 = normalizeBool(string, schema);
+    if (schema.type === "anyOf" && carriesOwnLogic(schema)) {
+      return Stdlib_Option.getOr(Stdlib_Array.findMap(schema.anyOf, member => {
+        let value;
+        try {
+          value = Sury.parseOrThrow(string$1, coerceWith(member, member));
+        } catch (exn) {
+          return;
         }
-        if (!match) {
-          return string;
-        }
-        break;
-      default:
-        return string;
-    }
-    switch (string) {
-      case "0" :
-      case "f" :
-        return "false";
-      case "1" :
-      case "t" :
-        return "true";
-      default:
-        return string;
+        return Primitive_option.some(value);
+      }), string$1);
+    } else {
+      return string$1;
     }
   });
   try {
@@ -191,8 +214,7 @@ function get(envSafe, name, schema, maybeFallback, maybeDevFallback, maybeInline
     if (error.RE_EXN_ID === S.Exn) {
       mixinInvalidIssue(envSafe, {
         name: name,
-        error: error._1,
-        input: input$1
+        error: error._1
       });
       return undefined;
     }

@@ -380,3 +380,29 @@ test("Fails to access EnvSafe after close", t => {
     },
   )
 })
+
+test("Coerces for a union carrying its own refinement", t => {
+  let schema = S.union([S.int->S.castToUnknown, S.bigint->S.castToUnknown])->S.refine(
+    value => value !== 99->Obj.magic,
+    ~error="Not 99",
+  )
+
+  let envSafe = EnvSafe.make(~env=Obj.magic(Dict.make()))
+
+  t->Assert.deepEqual(envSafe->EnvSafe.get("INT_ENV", schema, ~input=Some("1")), 1->Obj.magic)
+  t->Assert.deepEqual(
+    envSafe->EnvSafe.get("REFINED_ENV", schema, ~input=Some("99")),
+    %raw(`undefined`),
+  )
+  t->Assert.throws(
+    () => {
+      envSafe->EnvSafe.close
+    },
+    ~expectations={
+      message: `========================================
+❌ Invalid environment variables:
+    REFINED_ENV: Not 99
+========================================`,
+    },
+  )
+})

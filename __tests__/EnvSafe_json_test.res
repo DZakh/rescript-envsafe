@@ -93,3 +93,37 @@ test(`Fails with invalid json string`, t => {
     },
   )
 })
+
+test(`Keeps a non-JSON string for unknown schema`, t => {
+  let envSafe = EnvSafe.make(
+    ~env=Obj.magic({
+      "ENV": "abc",
+    }),
+  )
+
+  t->Assert.deepEqual(envSafe->EnvSafe.get("ENV", S.unknown), "abc"->Obj.magic)
+  t->Assert.notThrows(() => {
+    envSafe->EnvSafe.close
+  })
+})
+
+test(`Fails with a non-JSON string for json schema`, t => {
+  let envSafe = EnvSafe.make(
+    ~env=Obj.magic({
+      "ENV": "abc",
+    }),
+  )
+
+  t->Assert.deepEqual(envSafe->EnvSafe.get("ENV", S.json), %raw(`undefined`))
+  t->Assert.throws(
+    () => {
+      envSafe->EnvSafe.close
+    },
+    ~expectations={
+      message: `========================================
+❌ Invalid environment variables:
+    ENV: Expected JSON string, received "abc"
+========================================`,
+    },
+  )
+})

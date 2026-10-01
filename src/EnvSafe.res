@@ -45,7 +45,7 @@ module Error = {
 }
 
 type env = dict<string>
-type invalidIssue = {name: string, error: S.error, input: option<string>}
+type invalidIssue = {name: string, error: S.error}
 type missingIssue = {name: string}
 type t = {
   env: env,
@@ -143,10 +143,15 @@ let needsJsonReading = member =>
   }
 
 let coerceWith = (schema: S.t<'value>, member): S.t<'value> =>
-  if member->needsJsonReading {
-    S.jsonString->S.to(schema)
-  } else {
-    S.env->S.to(schema)
+  switch member {
+  // `S.unknown` accepts a raw string, so both readings are offered: the JSON
+  // one for a string that is a document, itself for one that is not. The order
+  // matters, since `S.env` would take "[1,2]" as the string it already is.
+  // `S.json` cannot join it - `S.env` has no decoder into JSON - so a JSON
+  // schema still rejects a string that is not a document.
+  | S.Unknown(_) => S.union([S.jsonString->S.to(schema), S.env->S.to(schema)])->magic
+  | _ if member->needsJsonReading => S.jsonString->S.to(schema)
+  | _ => S.env->S.to(schema)
   }
 
 // Anything the codec doesn't read passes through for the schema to reject,
@@ -169,6 +174,25 @@ let normalizeBool = (string, schema: S.t<'value>) =>
 // union has, not own logic; `refiner` has no field on `S.untagged`.
 let carriesOwnLogic = (schema: S.t<'value>) =>
   %raw(`s => s.refiner !== undefined`)(schema) || (schema->S.untag).to->Option.isSome
+
+// A union carrying its own logic cannot be rebuilt from its members without
+// dropping what it carries, so there the members coerce the *value* instead of
+// the schema: the first reading that accepts wins, and the schema still
+// validates and refines what comes out. This is what rescript-schema's
+// preprocessor did by wrapping rather than replacing.
+let coerceValue = (string, schema: S.t<'value>) =>
+  switch schema {
+  | S.AnyOf({anyOf}) if schema->carriesOwnLogic =>
+    anyOf
+    ->Array.findMap(member =>
+      switch string->S.parseOrThrow(~to=member->coerceWith(member)) {
+      | value => Some(value)
+      | exception _ => None
+      }
+    )
+    ->Option.getOr(string->magic)
+  | _ => string->magic
+  }
 
 // Sury flattens nested unions and spells `S.option(X)` as an `X | undefined`
 // union, and it reads an option or a single-type union as a whole - `S.option`
@@ -238,10 +262,10 @@ let get = (
       }
     }
   } else {
-    let input = input->Option.map(string => string->normalizeBool(schema))
+    let input = input->Option.map(string => string->normalizeBool(schema)->coerceValue(schema))
     try input->S.parseOrThrow(~to=schema->coerceSchema) catch {
     | S.Exn(error) => {
-        envSafe->mixinInvalidIssue({name, error, input})
+        envSafe->mixinInvalidIssue({name, error})
         %raw(`undefined`)
       }
     }
