@@ -180,14 +180,24 @@ let carriesOwnLogic = (schema: S.t<'value>) =>
 // the schema: the first reading that accepts wins, and the schema still
 // validates and refines what comes out. This is what rescript-schema's
 // preprocessor did by wrapping rather than replacing.
+//
+// Only a member that converts nothing can do this. What a reading produces is
+// the member's output, and the union validates its input - the same for a
+// member that carries no `to`, a shaped object for one that does. A union whose
+// members all transform gets no coercion rather than a value its own input
+// would reject.
 let coerceValue = (string, schema: S.t<'value>) =>
   switch schema {
   | S.AnyOf({anyOf}) if schema->carriesOwnLogic =>
     anyOf
     ->Array.findMap(member =>
-      switch string->S.parseOrThrow(~to=member->coerceWith(member)) {
-      | value => Some(value)
-      | exception _ => None
+      if (member->S.untag).to->Option.isSome {
+        None
+      } else {
+        switch string->S.parseOrThrow(~to=member->coerceWith(member)) {
+        | value => Some(value)
+        | exception _ => None
+        }
       }
     )
     ->Option.getOr(string->magic)

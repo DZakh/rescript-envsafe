@@ -195,6 +195,9 @@ function get(envSafe, name, schema, maybeFallback, maybeDevFallback, maybeInline
     let string$1 = normalizeBool(string, schema);
     if (schema.type === "anyOf" && carriesOwnLogic(schema)) {
       return Stdlib_Option.getOr(Stdlib_Array.findMap(schema.anyOf, member => {
+        if (Stdlib_Option.isSome(member.to)) {
+          return;
+        }
         let value;
         try {
           value = Sury.parseOrThrow(string$1, coerceWith(member, member));

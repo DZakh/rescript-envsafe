@@ -406,3 +406,25 @@ test("Coerces for a union carrying its own refinement", t => {
     },
   )
 })
+
+// Known gap against the rescript-schema version, which coerced this through a
+// preprocessor: a union that carries its own logic AND whose members convert
+// gets no coercion, so "true" reads as the string member rather than the bool
+// one. Coercing through a converting member would feed its output back into the
+// union's own input, which is a worse answer than none.
+test("Does not coerce for a union carrying its own refinement over converting members", t => {
+  let schema = S.union([
+    S.bool->S.shape(bool => #Bool(bool))->S.castToUnknown,
+    S.string->S.minLength(0)->S.shape(string => #String(string))->S.castToUnknown,
+  ])->S.refine(_ => true)
+
+  let envSafe = EnvSafe.make(~env=Obj.magic(Dict.make()))
+
+  t->Assert.deepEqual(
+    envSafe->EnvSafe.get("BOOL_ENV", schema, ~input=Some("true")),
+    #String("true")->Obj.magic,
+  )
+  t->Assert.notThrows(() => {
+    envSafe->EnvSafe.close
+  })
+})
