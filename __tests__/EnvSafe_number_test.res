@@ -94,7 +94,7 @@ test(`Fails to get invalid number`, t => {
       name: "TypeError",
       message: `========================================
 ❌ Invalid environment variables:
-    INT_ENV: Failed parsing at root. Reason: Expected int32, received "1_000"
+    INT_ENV: Expected int32, received "1_000"
 ========================================`,
     },
   )

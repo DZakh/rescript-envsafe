@@ -19,13 +19,20 @@ test(`Works with Example code`, t => {
     ),
     #development,
   )
-  t->Assert.is(envSafe->EnvSafe.get("PORT", S.int->S.port, ~devFallback=3000), 80)
+  t->Assert.is(envSafe->EnvSafe.get("PORT", S.port, ~devFallback=S.Port(3000)), S.Port(80))
   t->Assert.is(
-    envSafe->EnvSafe.get("API_URL", S.string->S.url, ~devFallback="https://example.com/graphql"),
-    "https://example.com/foo",
+    envSafe->EnvSafe.get(
+      "API_URL",
+      S.httpUrl,
+      ~devFallback=S.HttpUrl("https://example.com/graphql"),
+    ),
+    S.HttpUrl("https://example.com/foo"),
   )
-  t->Assert.is(envSafe->EnvSafe.get("AUTH0_CLIENT_ID", S.string), "xxxxx")
-  t->Assert.is(envSafe->EnvSafe.get("AUTH0_DOMAIN", S.string), "xxxxx.auth0.com")
+  t->Assert.is(envSafe->EnvSafe.get("AUTH0_CLIENT_ID", S.string->S.nonEmpty), S.NonEmpty("xxxxx"))
+  t->Assert.is(
+    envSafe->EnvSafe.get("AUTH0_DOMAIN", S.string->S.nonEmpty),
+    S.NonEmpty("xxxxx.auth0.com"),
+  )
   t->Assert.notThrows(() => {
     envSafe->EnvSafe.close
   })
